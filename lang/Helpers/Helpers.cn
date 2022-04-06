@@ -1,0 +1,16 @@
+#!/bin/bash
+
+LANG_Helpers_ImportImage_01="导入镜像成功"
+LANG_Helpers_ImportImage_02="导入镜像失败"
+LANG_Helpers_ExportImage_01="创建目录成功"
+LANG_Helpers_ExportImage_02="创建目录失败"
+LANG_Helpers_ExportImage_03="导出镜像成功"
+LANG_Helpers_ExportImage_04="导出镜像失败"
+LANG_Helpers_ContainerDiff_01="当前容器"
+LANG_Helpers_ContainerDiff_02="添加了文件或目录"
+LANG_Helpers_ContainerDiff_03="文件或目录已删除"
+LANG_Helpers_ContainerDiff_04="文件或目录已更改"
+LANG_Helpers_ContainerDiff_05="差异列表"
+LANG_Helpers_CacheHandle_01="强制采集数据..."
+LANG_Helpers_CacheHandle_02="采集数据..."
+LANG_Helpers_CacheHandle_03="加载缓存文件..."

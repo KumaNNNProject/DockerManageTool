@@ -1,0 +1,18 @@
+#!/bin/bash
+
+LANG_Menu_Networks_01="Network list"
+LANG_Menu_Networks_02="Create network"
+LANG_Menu_Networks_03="Delete network"
+LANG_Menu_Networks_04="Cleanup network"
+LANG_Menu_Networks01_01="Network list"
+LANG_Menu_Networks01_02="Network details"
+LANG_Menu_Networks02_01="Create network"
+LANG_Menu_Networks03_01="Delete network"
+LANG_Menu_Networks04_01="Cleanup network"
+LANG_Menu_Networks01Details_01="Network list"
+LANG_Menu_Networks01Details_02="Network details"
+LANG_Menu_Networks01Details_03="Network delete"
+LANG_Menu_Networks01Details_04="Network connection"
+LANG_Menu_Networks01Details_05="Network disconnection"
+
+

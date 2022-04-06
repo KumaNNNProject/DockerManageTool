@@ -1,0 +1,5 @@
+#!/bin/bash
+
+SYS_About_Note="Local host docker management tool"
+SYS_About_Author="KumaNNN"
+SYS_About_Project="https://github.com/KumaNNNProject/DockerManageTool"

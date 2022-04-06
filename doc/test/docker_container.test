@@ -1,0 +1,252 @@
+#!/bin/bash
+
+
+
+# 容器 测试
+# 获取所有容器信息
+# docker ps -a
+# 获取运行中的容器信息
+# docker ps
+#
+# 容器详情
+# docker container inspect <id>
+
+# range : 遍历
+# json : 编码为json字符串。当前会自动双引号包裹每项，且处理空格。
+#        如，"PHPIZE_DEPS=autoconf \t\tdpkg-dev \t\tfile \t\tg++ \t\tre2c"
+# println : 在新行上打印每个值。也可以直接使用 {{println}} 来换行
+# end ：遍历的结束。
+## 更多参阅：[Docker格式化输出命令:docker inspect --format学习笔记](https://www.cnblogs.com/kevingrace/p/6424476.html)
+#docker container inspect --format='{{range .ContainerConfig.Env}}{{json .}}{{println}}{{end}}'   ${ID}
+
+oldIFS=$IFS
+#IFS="@"
+ID=c151594a491f
+ID=9a5ea512234a
+ID=33c10683dcb8
+
+
+
+# 容器列表
+# echo '所有容器：'
+# docker ps -a --format "{{.ID}}#{{.Image}}#'{{.CreatedAt}}'#'{{.RunningFor}}'#'{{.Ports}}'#{{.Status}}#{{.Names}}#{{.Networks}}"
+# echo '运行中的容器：'
+# docker ps --format "{{.ID}}#{{.Image}}#'{{.CreatedAt}}'#'{{.RunningFor}}'#{{.Ports}}#{{.Status}}#{{.Names}}#{{.Networks}}"
+# echo
+# docker ps --format "{{.ID}}"
+# docker ps --format "{{.Image}}"
+# docker ps --format "{{.Command}}"
+# docker ps --format "{{.CreatedAt}}"
+# docker ps --format "{{.RunningFor}}"
+# docker ps --format "{{.Ports}}"
+# docker ps --format "{{.Status}}"
+# docker ps --format "{{.Size}}"
+# docker ps --format "{{.Names}}"
+# docker ps --no-trunc --format "'{{.Labels}}'"
+# docker ps --no-trunc --format "{{.Mounts}}"
+# docker ps --format "{{.Networks}}"
+
+
+
+# 容器详情(部分)
+echo [${ID}]:
+echo 
+echo Id 
+docker container inspect --format='{{.Id}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 创建时间：Created 
+docker container inspect --format='{{.Created}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 镜像ID：Image
+docker container inspect --format='{{.Image}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 日志路径：LogPath
+docker container inspect --format='{{.LogPath}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 名称：Name
+docker container inspect --format='{{.Name}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 平台：Platform
+docker container inspect --format='{{.Platform}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.Status
+docker container inspect --format='{{.State.Status}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.Running
+docker container inspect --format='{{.State.Running}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.Paused
+docker container inspect --format='{{.State.Paused}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.Restarting
+docker container inspect --format='{{.State.Restarting}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.Pid
+docker container inspect --format='{{.State.Pid}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.Error
+docker container inspect --format='{{.State.Error}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.StartedAt
+docker container inspect --format='{{.State.StartedAt}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.FinishedAt
+docker container inspect --format='{{.State.FinishedAt}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.RestartPolicy.Name
+docker container inspect --format='{{.HostConfig.RestartPolicy.Name}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.RestartPolicy.MaximumRetryCount
+docker container inspect --format='{{.HostConfig.RestartPolicy.MaximumRetryCount}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.AutoRemove
+docker container inspect --format='{{.HostConfig.AutoRemove}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.Dns[] 
+docker container inspect --format='{{range .HostConfig.Dns}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.DnsOptions[] 
+docker container inspect --format='{{range .HostConfig.DnsOptions}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.DnsSearch[] 
+docker container inspect --format='{{range .HostConfig.DnsSearch}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.Privileged
+docker container inspect --format='{{.HostConfig.Privileged}}'  ${ID}
+echo ----------------------------------------------------------
+
+echo 
+echo 挂载配置：Mounts[] 
+docker container inspect --format='{{range .Mounts}}{{json .}}{{println}}{{end}}'   ${ID}
+echo 挂载配置：Mounts[].Source 
+docker container inspect --format='{{range .Mounts}}{{json .Source}}{{println}}{{end}}'   ${ID}
+echo 挂载配置：Mounts[].Destination 
+docker container inspect --format='{{range .Mounts}}{{json .Destination}}{{println}}{{end}}'   ${ID}
+echo 挂载配置：Mounts[].Mode 
+docker container inspect --format='{{range .Mounts}}{{json .Mode}}{{println}}{{end}}'   ${ID}
+echo 挂载配置：Mounts[].RW 
+docker container inspect --format='{{range .Mounts}}{{json .RW}}{{println}}{{end}}'   ${ID}
+echo 
+echo 挂载配置：Mounts[].Source:Destination:Mode   #"/mnt/f_DockerData/Tmp/a/aa:/mnt/tmp2:rw"
+docker container inspect --format='{{range .Mounts}}"{{.Source}}:{{.Destination}}:{{.Mode}}"{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+
+
+# Config 内容可采用
+echo 
+echo Config.Hostname 
+docker container inspect --format='{{.Config.Hostname}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Domainname 
+docker container inspect --format='{{.Config.Domainname}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.User 
+docker container inspect --format='{{.Config.User}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.ExposedPorts{} 
+# "9000/tcp":{}
+docker container inspect --format='{{range $p,$conf := .Config.ExposedPorts}}{{json $p}}:{{$conf}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Tty
+docker container inspect --format='{{.Config.Tty}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Env[]
+docker container inspect --format='{{range .Config.Env}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Image 
+docker container inspect --format='{{.Config.Image}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Volumes{} 
+docker container inspect --format='{{range .Config.Volumes}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.WorkingDir 
+docker container inspect --format='{{.Config.WorkingDir}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Labels{} 
+docker container inspect --format='{{range .Config.Labels}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 维护人员：
+echo Config.Labels.maintainer
+docker container inspect --format='{{.Config.Labels.maintainer}}'  ${ID}
+echo ----------------------------------------------------------
+
+echo 
+echo 网络：NetworkSettings.Gateway
+docker container inspect --format='{{.NetworkSettings.Gateway}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 网络：NetworkSettings.IPAddress
+docker container inspect --format='{{.NetworkSettings.IPAddress}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 网络：NetworkSettings.IPPrefixLen
+docker container inspect --format='{{.NetworkSettings.IPPrefixLen}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 网络：NetworkSettings.MacAddress
+docker container inspect --format='{{.NetworkSettings.MacAddress}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 网络：NetworkSettings.Ports{}
+# 数据结构：
+# "Ports": {
+			# "86/tcp": [
+				# {
+					# "HostIp": "0.0.0.0",
+					# "HostPort": "8086"
+				# }
+			# ],
+			# "88/tcp": [
+				# {
+					# "HostIp": "0.0.0.0",
+					# "HostPort": "8088"
+				# }
+			# ],
+			# "9000/tcp": null
+		# },
+##############################
+# 遍历(range)，$p等于"86/tcp"；$conf等于:号后面的数组[...]，每个元素为{}
+# 所以$conf也可以像前面一样遍历，然后即可获取其中的属性的值
+#
+# 官方文，如下使用index将报错。
+#docker inspect --format='{{range $p,$conf := .NetworkSettings.Ports}} {{$p}} -> {{(index $conf 0).HostPort}} {{end}}'  ${ID}
+#
+# 正确做法是再次遍历(range)，如下：
+# 没绑定的暴露端口也显示
+# 86/tcp->0.0.0.0:8086   9000/tcp->
+docker inspect --format='{{range $p,$conf := .NetworkSettings.Ports}}{{$p}} -> {{range $conf}}{{.HostIp}}:{{.HostPort}} {{end}}{{end}}'  ${ID}
+# 只显示绑定的端口
+# 86/tcp->0.0.0.0:8086 
+docker inspect --format='{{range $p,$conf := .NetworkSettings.Ports}}{{range $conf}}{{$p}} -> {{.HostIp}}:{{.HostPort}} {{end}}{{end}}'  ${ID}
+echo ----------------------------------------------------------
+

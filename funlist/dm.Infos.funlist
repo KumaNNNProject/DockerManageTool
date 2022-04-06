@@ -1,0 +1,1818 @@
+#!/bin/bash
+
+##########################################################
+#[FunList]
+# [简述]
+# 
+# 执行环境：宿主机
+# 调用方式：./  source  sh 
+# 调用参数：			 		 	  				  
+#     	   [$1]:   --help 查看帮助文档		      	  
+#
+# 备注：静态函数列表，使用source包含在文件头部
+##########################################################
+# 备注
+# exit 1  : 报错退出
+# exit 0  : 无错误退出
+# return int  : 函数内部，只能返回整数(0-255)
+#               推荐使用return来中止后续执行
+##########################################################
+
+# ----预处理--------------------------------------------#
+
+# 加载模式(1:主动|0:被动<默认>)
+Sys_LoadMode="${Sys_LoadMode:-0}"
+# 调试开关
+Sys_Debug="${Sys_Debug:-0}"
+App_Debug="${App_Debug:-0}"
+# 默认分隔符
+oldIFS=$IFS
+# 测试:开关(true|false)
+App_testON=false
+# 测试:文件名和目录名
+App_testFileName=.env
+App_testDirName=lib
+# 测试:多条件关系(and|or)
+App_testMult=and
+# 是否跳转到当前脚本目录(1:是|0:否)
+App_toScriptDir="0"
+
+# ================================================== 
+# 函数名称: MAP_SET_FileList
+# 函数功能: 映射表:文件列表	 
+# 函数参数:  
+#     	 [$1]:   文件路径(${BASH_SOURCE[0]}<默认>)
+#     	         ./funlist/a/bc.sh 
+#     	          /funlist/a/bc.sh 
+#
+# 变量列表:
+#               ${MAP_Index} : MAP全局索引
+#               ${MAP_ID[0]} : ID(md5sum(文件路径))
+#      ${MAPSET_FileList[0]} : 文件列表(数组)
+#
+# 返回值:  
+# 		$?: 获取调用结果(调用后立即使用)
+# 		    0: 执行成功 
+# 		    1: 执行失败 
+# 
+# ================================================== 
+function MAP_SET_FileList(){
+	# ${BASH_SOURCE[0]}: ./funlist/a/bc.sh
+	#                      funlist/a/bc.sh
+	# dirname ${BASH_SOURCE[0]}: ./funlist/a
+	#                              funlist/a
+	# 删除行首空格: sed 's/^[ \t]*//g'
+	# 删除行尾空格: sed 's/[ \t]*$//g'	
+	
+	# ./funlist/a/bc.sh  =>  funlist/a/bc.sh
+	#  /funlist/a/bc.sh
+	# 文件
+	local File="${1:-${BASH_SOURCE[0]}}"
+	[ "${File:0:1}" == "." ]  &&  File="`echo "${File}" | sed 's/^\.//g' | sed 's/^\///g'`"
+	# ID(md5sum(文件路径))
+	local TMP_ID="`echo -n "${File}" | md5sum | cut -d ' ' -f 1`"
+		
+	# 存在记录时，使用已存记录的索引	
+	for key in ${!MAP_ID[@]}
+	do
+		if [ "${TMP_ID}" == "${MAP_ID[$key]}" ];then
+			#echo "ID hit..."
+			local MAP_NextIndex="${MAP_Index}"
+			MAP_Index="${key}"
+		fi
+	done
+	
+	# MAP全局索引
+	MAP_Index="${MAP_Index:-0}"
+	# ID(md5sum(文件路径))
+	MAP_ID[${MAP_Index}]="${TMP_ID}"
+	# 文件列表
+	MAPSET_FileList[${MAP_Index}]="${File}"
+	let MAP_Index++	
+	# 恢复索引
+	[ "${MAP_NextIndex}" != "" ] &&  MAP_Index="${MAP_NextIndex}"
+}
+##### 函数测试 #####
+# MAP_SET_FileList
+# 执行时间: 00:08
+# MAP_SET_FileList  "/funlist/a/bc1.sh"
+# 执行时间: 00:04
+# MAP_SET_FileList  "/funlist/a/bc2.sh"
+# MAP_SET_FileList  "/funlist/a/bc3.sh"
+# MAP_SET_FileList  "/funlist/a/bc4.sh"
+# MAP_SET_FileList  "/funlist/a/bc5.sh"
+# MAP_SET_FileList  "/funlist/a/bc6.sh"
+# MAP_SET_FileList  "/funlist/a/bc7.sh"
+# MAP_SET_FileList  "/funlist/a/bc8.sh"
+# MAP_SET_FileList  "/funlist/a/bc9.sh"
+# MAP_SET_FileList  "/funlist/a/bc10.sh"
+# MAP_SET_FileList
+# 执行时间: 00:43 
+
+# ================================================== 
+# 函数名称: FUN_Source
+# 函数功能: 文件加载
+# 函数参数:  
+#     	 [$1]:   文件路径 
+# 
+# ================================================== 
+function FUN_Source(){
+	#需要加载的文件
+	local SourceFile="${1:-}"
+	
+	#设置 映射表.文件列表
+	[ -e "${SourceFile}" ] &&  MAP_SET_FileList "${SourceFile}"
+	#加载文件
+	if [ "${SourceFile}" != "" ];then
+		# 加载模式(1:主动|0:被动<默认>)
+		Sys_LoadMode="1"
+		if [ -e "${SourceFile}" ];then 
+			echo "[FUN_Source] ${SourceFile}"
+			source "${SourceFile}"  
+		else 
+			echo "[FUN_Source:File not exist] ${SourceFile}"
+		fi
+	fi
+}
+##### 函数测试 #####
+# FUN_Source  "/funlist/a/bc1.sh"
+# FUN_Source  "/funlist/a/bc2.sh"
+# FUN_Source  "/funlist/a/bc3.sh"
+# FUN_Source  "/funlist/a/bc4.sh"
+# FUN_Source  "/funlist/a/bc5.sh"
+# FUN_Source  "/funlist/a/bc6.sh"
+# FUN_Source  "/funlist/a/bc7.sh"
+# FUN_Source  "/funlist/a/bc8.sh"
+# FUN_Source  "/funlist/a/bc9.sh"
+# FUN_Source  "/funlist/a/bc10.sh"
+
+# ================================================== 
+# 函数名称: MAP_SET 
+# 函数功能: 映射表:设置 
+# 函数参数: 
+#     	 [$1]:   更多数据(1:是|0:否<默认>) 
+#
+# 变量列表:
+#         ${MAP_FileName[0]} : 文件名称(bc.sh)
+#     ${MAP_AbsolutePath[0]} : 绝对路径(/mnt/.../funlist/a)
+#     ${MAP_RelativePath[0]} : 相对路径(funlist/a)
+#          ${MAP_FunList[0]} : 函数列表(,号分隔)
+#      ${MAP_FunList_Raw[0]} : 函数列表(原生,包含换行符)
+#     ${MAP_FunList_Array_0} : 函数列表(数组)
+#                              #eval echo "\${MAP_FunList_Array_${MAP_Index}[0]}"  
+# 返回值: 
+# 		$?: 获取调用结果(调用后立即使用) 
+# 		    0: 执行成功 
+# 		    1: 执行失败 
+# 
+# ================================================== 
+function MAP_SET(){ 
+	#更多数据(1:是|0:否<默认>)
+	local isMore="${1:-0}"
+	
+	# 设置数据	
+	for key in ${!MAPSET_FileList[@]}
+	do
+		# 文件名称(bc.sh)
+		[ "${MAP_FileName[${key}]}" == "" ] && MAP_FileName[${key}]="${MAPSET_FileList[$key]##*/}"
+		# 绝对路径(/mnt/.../funlist/a)
+		[ "${MAP_AbsolutePath[${key}]}" == "" ] && MAP_AbsolutePath[${key}]="$(cd $(dirname ${MAPSET_FileList[$key]}); pwd)"
+		# 相对路径(funlist/a) 
+		[ "${MAP_RelativePath[${key}]}" == "" ] && MAP_RelativePath[${key}]="`dirname ${MAPSET_FileList[$key]}`"
+		if [ "${isMore}" == "1" ]; then
+			# 函数列表(原生,包含换行符)
+			MAP_FunList_Raw[${key}]="`cat ${MAPSET_FileList[$key]} | grep "^function.*" | sed 's/function//g' | sed 's/()//g' | sed 's/{//g' | sed 's/^[ \t]*//g' | sed 's/[ \t]*$//g'`"
+			# 函数列表(数组)
+			eval MAP_FunList_Array_${key}=\(`echo "${MAP_FunList_Raw[${key}]}"`\)
+			# 函数列表(,号分隔)	
+			for i in `eval echo '${MAP_FunList_Array_'"${key}"'[@]}'`
+			do
+				[ "${FunList}" != "" ] &&  FunList="${FunList},${i}" || FunList="${i}"
+			done
+			MAP_FunList[${key}]="${FunList}"
+			unset FunList
+		else 
+			# 函数列表(原生,包含换行符)
+			MAP_FunList_Raw[${key}]=""
+			# 函数列表(数组)
+			eval MAP_FunList_Array_${key}=""
+			# 函数列表(,号分隔)
+			MAP_FunList[${key}]=""
+		fi
+		
+	done
+
+	# 清除变量
+	unset FunList	
+}
+##### 函数测试 #####
+# FUN_Source
+# FUN_Source  "tmp/a/ta.sh"
+# FUN_Source  "tmp/b/tb.sh"
+# MAP_SET 
+#
+# echo "ID: ${MAP_ID[0]}"
+# echo "FileName: ${MAP_FileName[0]}"
+# echo "AbsolutePath: ${MAP_AbsolutePath[0]}"
+# echo "MAP_RelativePath: ${MAP_RelativePath[0]}"
+# echo "MAP_FunList: ${MAP_FunList[0]}"
+# echo 
+# echo "ID: ${MAP_ID[1]}"
+# echo "FileName: ${MAP_FileName[1]}"
+# echo "AbsolutePath: ${MAP_AbsolutePath[1]}"
+# echo "MAP_RelativePath: ${MAP_RelativePath[1]}"
+# echo "MAP_FunList: ${MAP_FunList[1]}"
+# echo 
+# echo "ID: ${MAP_ID[2]}"
+# echo "FileName: ${MAP_FileName[2]}"
+# echo "AbsolutePath: ${MAP_AbsolutePath[2]}"
+# echo "MAP_RelativePath: ${MAP_RelativePath[2]}"
+# echo "MAP_FunList: ${MAP_FunList[2]}"
+
+# ================================================== 
+# 函数名称: MAP_GET					  	 
+# 函数功能: 映射表:获取	 
+# 函数参数: 			 		 	  				 
+#     	 $1: 查询字段
+#     	 $2: 条件字段01(key)
+#     	 $3: 条件内容01(value)
+#      [$4]: 条件字段02(key)(and)     		      	 
+#      [$5]: 条件内容02(value)
+#  
+# 可用查询字段:
+#               MAP_ID : ID
+#         MAP_FileName : 文件名称
+#     MAP_AbsolutePath : 绝对路径(/mnt/.../funlist/a)
+#     MAP_RelativePath : 相对路径(funlist/a)
+#          MAP_FunList : 函数列表(,号分隔)
+#      MAP_FunList_Raw : 函数列表(原生,包含换行符)
+#
+# 可用条件字段:
+#         MAP_FileName : 文件名称
+#     MAP_AbsolutePath : 绝对路径(/mnt/.../funlist/a)
+#     MAP_RelativePath : 相对路径(funlist/a)
+#          MAP_FunList : 函数名称
+#
+# 返回值:  									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 		  		 	  
+# 	                       Str : 结果(取值为最后一个匹配的结果) 
+# 	                 ${Result} : 结果(取值为最后一个匹配的结果) 
+# 	       ${MAP_Result_Index} : 结果 索引
+# 	          ${MAP_Result_ID} : 结果 ID
+# 	    ${MAP_Result_FileName} : 结果 文件名称
+# 	${MAP_Result_AbsolutePath} : 结果 绝对路径
+# 	${MAP_Result_RelativePath} : 结果 相对路径
+# 	     ${MAP_Result_FunList} : 结果 函数列表(,号分隔)
+# 	  ${MAP_Result_FunListRaw} : 结果 函数列表(原生,包含换行符)			 									 	  
+# ================================================== 
+function MAP_GET(){
+	#查询字段
+	local QueryField="${1}"
+	#条件字段01
+	local ConditionKey_01="${2}"	
+	#条件内容01
+	local ConditionValue_01="${3}"
+	#条件字段02
+	local ConditionKey_02="${4:-}"	
+	#条件内容02
+	local ConditionValue_02="${5:-}"
+	
+	if [ "${ConditionKey_02}" != "" ];then
+		# 多条件查询
+		for key in ${!MAP_FileName[@]}
+		do
+			local c1="`eval echo "\\${${ConditionKey_01}[${key}]}" | grep -w "${ConditionValue_01}"`"						
+			local c2="`eval echo "\\${${ConditionKey_02}[${key}]}" | grep -w "${ConditionValue_02}"`"						
+			#c1="`echo "${c1}" | grep -w "${ConditionValue_01}"`"		
+			#c2="`echo "${c2}" | grep -w "${ConditionValue_02}"`"		
+			if [ "${c1}" != "" ] && [ "${c2}" != "" ];then
+				eval MAP_Result="\${${QueryField}[${key}]}"
+				MAP_Result_Index="${key}"
+				MAP_Result_ID="${MAP_ID[${key}]}"
+				MAP_Result_FileName="${MAP_FileName[${key}]}"
+				MAP_Result_AbsolutePath="${MAP_AbsolutePath[${key}]}"
+				MAP_Result_RelativePath="${MAP_RelativePath[${key}]}"
+				MAP_Result_FunList="${MAP_FunList[${key}]}"
+				MAP_Result_FunListRaw="${MAP_FunListRaw[${key}]}"
+			fi 
+		done 
+	else
+		# 单条件查询
+		for key in ${!MAP_FileName[@]}
+		do			
+			local c1="`eval echo "\\${${ConditionKey_01}[${key}]}" | grep -w "${ConditionValue_01}"`"			
+			#c1="`echo "${c1}" | grep -w "${ConditionValue_01}"`"		
+			if [ "${c1}" != "" ];then
+				eval MAP_Result="\${${QueryField}[${key}]}"
+				MAP_Result_Index="${key}"
+				MAP_Result_ID="${MAP_ID[${key}]}"
+				MAP_Result_FileName="${MAP_FileName[${key}]}"
+				MAP_Result_AbsolutePath="${MAP_AbsolutePath[${key}]}"
+				MAP_Result_RelativePath="${MAP_RelativePath[${key}]}"
+				MAP_Result_FunList="${MAP_FunList[${key}]}"
+				MAP_Result_FunListRaw="${MAP_FunListRaw[${key}]}"
+			fi
+		done
+	fi
+	# 返回结果
+	echo ${MAP_Result}	
+
+	# 清除变量
+	#unset MAP_Result
+}
+##### 函数测试 #####
+# MAP_GET "MAP_RelativePath"  "MAP_FileName" "ta.sh"
+# MAP_GET "MAP_RelativePath" "MAP_FunList" "MAP_SETs" "MAP_FileName" "ta.sh"
+# echo MAP_RelativePath: ${MAP_Result}
+##### 使用示例 ##### 
+#脚本所在目录
+# SPath="`MAP_GET "MAP_AbsolutePath" "MAP_FileName" "ta.sh"`"
+# echo MAP_AbsolutePath: ${SPath}
+
+# ================================================== 
+# 函数名称: testENV 
+# 函数功能: 测试环境是否符合脚本要求 
+# 函数参数: 
+# 
+# 上下文变量: 
+# 		 App_testON : 开关(true|false) 
+#  App_testFileName : 文件名 
+# 	App_testDirName : 目录名 
+# 	   App_testMult : 多条件关系(and|or) 
+# 返回值: 
+# 		         Str : 项目实际路径(/.../funlist 或 /)
+# ${RealProjectPath} : 项目实际路径(/.../funlist 或 /)
+# ================================================== 
+function testENV(){
+	# 原理：检测当前路径下是否有指定的文件或目录
+	#
+	# ${FUNCNAME[0]} : 当前函数名
+	# 获取符合条件的路径( /mnt/f_DockerData )
+	# -d : 判断是否为目录，存在为true
+	# -e : 判断是否为文件，存在为true
+	# 由于！取反，实际结果: 
+	# && :  任一个true，则执行循环体 (or)
+	# || :  都为true，则执行循环体 (and)
+	
+	local ScriptDir="`MAP_GET "MAP_AbsolutePath" "MAP_FunList" "${FUNCNAME[0]}"`"
+	cd ${ScriptDir}
+	if [ "${App_testMult}" == "and" ];then
+		# 条件关系: 和(and)
+		while ( [ ! -d $App_testDirName ] || [ ! -e $App_testFileName ]  )
+		do				
+			# 根目录，退出循环，避免死循环
+			if [ `pwd` == '/' ]; then					
+				break
+			else
+				cd ..					
+			fi
+		done
+		RealProjectPath=`pwd`
+	elif [ "${App_testMult}" == "or" ];then
+		# 条件关系: 或(or)
+		while ( [ ! -d $App_testDirName ] && [ ! -e $App_testFileName ]  )
+		do
+			# 根目录，退出循环，避免死循环
+			if [ `pwd` == '/' ]; then					
+				break
+			else
+				cd ..					
+			fi
+		done
+		RealProjectPath=`pwd`
+	fi		
+	cd ${ScriptDir}
+	echo ${RealProjectPath}
+}
+#testENV
+
+# 使用环境测试
+[ $App_testON == 'true' ] && testENV
+#默认处理: 设置此脚本的相关信息
+[ "${Sys_LoadMode}" == "0" ] &&  FUN_Source
+# FUN_Source  "tmp/a/ta.sh"
+# FUN_Source  "tmp/b/tb.sh"
+#推荐在加载完所有文件后使用
+[ "${Sys_LoadMode}" == "0" ] &&  MAP_SET 
+
+
+# 脚本名称
+SCRIPT_NAME=${BASH_SOURCE[0]##*/}
+# 脚本所在目录
+# BASH_SOURCE[0]: 存储脚本的名称，如 funlist/a/bc.sh
+# 注: 只适用于bash shell，不会改变cd目录
+#     SCRIPT_DIR=$(cd $(dirname $0); pwd)  #不准确# $0不同方式调用结果不同
+## OK # ./XXX.sh 	  :  /mnt/f_DockerData/scripts
+## OK # source XXX.sh :  /mnt/f_DockerData/scripts
+## OK # bash XXX.sh	  :  /mnt/f_DockerData/scripts
+## NO # sh XXX.sh	  :  Error
+#SCRIPT_DIR=$(cd $(dirname ${BASH_SOURCE[0]}); pwd) #改用如下方式# 
+#SCRIPT_DIR="`MAP_GET "MAP_AbsolutePath" "MAP_FileName" "${SCRIPT_NAME}"`"
+# 跳转到脚本目录
+[ "${App_toScriptDir}" == "1" ] && cd ${SCRIPT_DIR}
+
+# Debug
+[ "${Sys_Debug}" == 1 ] && echo RealProjectPath: $RealProjectPath
+[ "${Sys_Debug}" == 1 ] && echo PWD: $(pwd)
+
+# ----预处理--------------------------------------------#
+
+
+# ----参数处理------------------------------------------------------------------------------------------#
+
+# ----参数处理------------------------------------------------------------------------------------------#
+
+
+# ----函数定义------------------------------------------------------------------------------------------#
+
+# ================================================== 
+# 函数名称：outhelp		 					  	 
+# 函数功能：帮助文档	  	  							 
+# 函数参数：			 		 	  				 
+# 			 									 	 
+# 返回值： 									 	  
+# 		 Document	 									 	  
+# ================================================== 
+function outhelp()
+{			
+	echo
+	echo "xxxxxxxx"
+	echo
+	echo "先引用该文件，再调用相关函数"
+	echo "source ${SCRIPT_NAME}"
+	echo
+	echo "FunctionName  arg1  arg2  ... "
+	echo "       参数列表："
+	echo "         arg1：xxxxxx。必需"
+	echo "         arg2：xxxxx。可选"
+	echo  	 
+	echo "示例："
+	echo "FunctionName  8.0"  
+		
+	return 0 2>/dev/nul
+	exit 0
+}
+
+
+# ================================================== 
+# 函数名称：Infos_Image			 					  	 
+# 函数功能：镜像详情  							 
+# 函数参数：			 		 	  				 
+#     		 $1:   镜像ID				      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# INFO_Images_${ID}_ID            : 镜像完整ID
+# INFO_Images_${ID}_Created       : 镜像创建时间
+# INFO_Images_${ID}_DockerVersion : Docker版本
+# INFO_Images_${ID}_Author        : 镜像作者
+# INFO_Images_${ID}_Architecture  : 镜像架构
+# INFO_Images_${ID}_Os            : 镜像操作系统
+# INFO_Images_${ID}_Size          : 镜像大小(字节)						  
+# INFO_Images_${ID}_RepoTags[0]   : 仓库和标签(数组)						  
+# ================================================== 
+function Infos_Image(){
+	# 镜像ID
+	ID="$1"
+	[ "${ID}" == "" ] &&  echo 'Infos_Image()：镜像ID不能为空'  &&    return 1
+	
+	IFS="&"
+	######## 非数组储值 ########
+	# 源数据字符串
+	# 镜像完整ID#创建镜像的时间#Docker版本#作者#架构#操作系统#大小
+	OriginalStr_01=`docker image inspect --format="{{.Id}}#'{{.Created}}'#{{.DockerVersion}}#'{{.Author}}'#{{.Architecture}}#{{.Os}}#{{.Size}}"  ${ID} 2>/dev/null`
+
+	echo "#!/bin/bash">"${TmpDir_Images_Sub}DATA_Images_${ID}.sh"
+	b=0
+	echo $OriginalStr_01 |while read -r line_01
+	do
+		#echo $b : $line_01
+		# 设置分割符(源数据的预定义是#)	
+		IFS="#"
+		# 读入到数组
+		brr=($line_01)
+		# 时间处理  T=>" " Z=>""
+		brr[1]=`echo ${brr[1]} | sed s/T/\ /g | sed s/Z//g`
+		echo "INFO_Images_${ID}_ID=\"${brr[0]}\"">>"${TmpDir_Images_Sub}DATA_Images_${ID}.sh"
+		echo "INFO_Images_${ID}_Created=\"${brr[1]}\"">>"${TmpDir_Images_Sub}DATA_Images_${ID}.sh"
+		echo "INFO_Images_${ID}_DockerVersion=\"${brr[2]}\"">>"${TmpDir_Images_Sub}DATA_Images_${ID}.sh"
+		echo "INFO_Images_${ID}_Author=\"${brr[3]}\"">>"${TmpDir_Images_Sub}DATA_Images_${ID}.sh"
+		echo "INFO_Images_${ID}_Architecture=\"${brr[4]}\"">>"${TmpDir_Images_Sub}DATA_Images_${ID}.sh"
+		echo "INFO_Images_${ID}_Os=\"${brr[5]}\"">>"${TmpDir_Images_Sub}DATA_Images_${ID}.sh"
+		echo "INFO_Images_${ID}_Size=\"${brr[6]}\"">>"${TmpDir_Images_Sub}DATA_Images_${ID}.sh"
+		let b++	
+	done	
+	
+	######## 数组储值 ########
+	# 数据为多行数据，无需分割读入数组：
+	# "php:7.3"
+	# "php:7.3-cli"
+	#
+	# 源数据字符串
+	# 仓库和标签
+	OriginalStr_02=`docker image inspect --format="{{range .RepoTags}}{{json .}}{{println}}{{end}}"  ${ID} 2>/dev/null`
+		
+	k=0
+	echo $OriginalStr_02 |while read -r line_02
+	do
+		#     1 : "php:7.3"
+		#echo $k : $line_02	
+		echo "INFO_Images_${ID}_RepoTags[${k}]=${line_02}">>"${TmpDir_Images_Sub}DATA_Images_${ID}.sh"
+		let k++	
+	done
+	# 加载文件
+	source "${TmpDir_Images_Sub}DATA_Images_${ID}.sh"
+	IFS=${oldIFS}
+	# 时间戳
+	echo "`date +%s`">"${TmpDir_Images_Sub}DATA_Images_${ID}.sh.time"
+	
+	[ "${Sys_Debug}" == 1 ] && echo cat "${TmpDir_Images_Sub}DATA_Images_${ID}.sh"
+	# 清除变量
+	unset OriginalStr_01
+	unset OriginalStr_02
+	unset b
+	unset k
+	
+	return 0
+}
+##### 函数测试 #####
+# tid=dcf9ec9265e0
+# Infos_Image  "${tid}"
+# echo ----------------------------------------------
+# eval echo 镜像完整ID: \${INFO_Images_${tid}_ID}
+# eval echo 镜像创建时间: \${INFO_Images_${tid}_Created}
+# eval echo Docker版本: \${INFO_Images_${tid}_DockerVersion}
+# eval echo 镜像作者: \${INFO_Images_${tid}_Author}
+# eval echo 镜像架构: \${INFO_Images_${tid}_Architecture}
+# eval echo 镜像操作系统: \${INFO_Images_${tid}_Os}
+# eval echo 镜像大小: \${INFO_Images_${tid}_Size}
+# eval echo 仓库和标签: \${INFO_Images_${tid}_RepoTags[0]}
+# eval echo 仓库和标签: \${INFO_Images_${tid}_RepoTags[1]}
+# echo ----------------------------------------------
+
+
+# ================================================== 
+# 函数名称：Infos_Images		 					  	 
+# 函数功能：镜像列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   完全刷新(1:是|0:否<默认>)				      	 
+#     		         获取每个镜像详情			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# INFO_Images_ID[1]               : 镜像ID
+# INFO_Images_Repository[1]       : 镜像仓库
+# INFO_Images_Tag[1]              : 镜像标签
+# INFO_Images_CreatedSince[1]     : 镜像自创建以来的时间
+# INFO_Images_CreatedAt[1]        : 镜像创建时间
+# INFO_Images_Size[1]             : 镜像大小
+# INFO_Images_Architecture[1]     : 镜像架构
+# INFO_Images_Os[1]               : 镜像操作系统						  
+# ================================================== 
+function Infos_Images(){
+	# A组：while保存数据到文件，再加载文件(设置变量)
+	# 优点：数据持久化
+	# 缺点：操作复杂
+	# 完全刷新(1:是|0:否<默认>)
+	FullRefresh="${1:-0}"
+	
+	IFS="&"
+	# 源数据字符串
+	# 镜像ID#镜像库#镜像标签#自创建镜像以来经过的时间#创建镜像的时间#镜像大小
+	OriginalStr=`docker images --format "{{.ID}}#{{.Repository}}#{{.Tag}}#'{{.CreatedSince}}'#'{{.CreatedAt}}'#{{.Size}}" 2>/dev/null`
+	
+	# 数据持久化文件
+	DATA_Images="${TmpDir_Images}Data_Images.sh"	
+
+	echo "#!/bin/bash">"${DATA_Images}"
+	i=1
+	echo $OriginalStr | while read -r line
+	do
+		#echo $i : $line
+		# 设置分割符(源数据的预定义是#)	
+		IFS="#"
+		# 读入到数组
+		arr=($line)
+		ID="${arr[0]}"
+		echo "INFO_Images_ID[${i}]=\"${arr[0]}\"">>"${DATA_Images}"
+		echo "INFO_Images_Repository[${i}]=\"${arr[1]}\"">>"${DATA_Images}"
+		echo "INFO_Images_Tag[${i}]=\"${arr[2]}\"">>"${DATA_Images}"
+		echo "INFO_Images_CreatedSince[${i}]=\"${arr[3]}\"">>"${DATA_Images}"
+		echo "INFO_Images_CreatedAt[${i}]=\"${arr[4]}\"">>"${DATA_Images}"
+		echo "INFO_Images_Size[${i}]=\"${arr[5]}\"">>"${DATA_Images}"
+		# 新增项	
+		echo "INFO_Images_Architecture[${i}]=\"`docker image inspect --format='{{.Architecture}}'  ${ID} 2>/dev/null`\"">>"${DATA_Images}"
+		echo "INFO_Images_Os[${i}]=\"`docker image inspect --format='{{.Os}}'  ${ID} 2>/dev/null`\"">>"${DATA_Images}"
+		# 完全刷新: 获取每个镜像详情
+		[ "${FullRefresh}" == 1 ] && Infos_Image  "${ID}"
+		let i++	
+	done
+	IFS=${oldIFS}
+	# 加载文件
+	source "${DATA_Images}"
+	# 时间戳
+	echo "`date +%s`">"${DATA_Images}.time"
+	
+	[ "${Sys_Debug}" == 1 ] && echo cat "${DATA_Images}" 
+	# 清除变量
+	unset FullRefresh
+	unset str
+	unset OriginalStr
+	unset i
+
+	return 0
+}
+##### 函数测试 #####
+#Infos_Images
+# echo ---------------------------------------------- 
+# echo 'INFO_Images_ID[1]:' "${INFO_Images_ID[1]}"
+# echo 'INFO_Images_Repository[1]:' "${INFO_Images_Repository[1]}"
+# echo 'INFO_Images_Tag[1]:' "${INFO_Images_Tag[1]}"
+# echo 'INFO_Images_CreatedSince[1]:' "${INFO_Images_CreatedSince[1]}"
+# echo 'INFO_Images_CreatedAt[1]:' "${INFO_Images_CreatedAt[1]}"
+# echo 'INFO_Images_Size[1]:' "${INFO_Images_Size[1]}"
+# echo 'INFO_Images_Architecture[1]:' "${INFO_Images_Architecture[1]}"
+# echo 'INFO_Images_Os[1]:' "${INFO_Images_Os[1]}"
+# echo ----------------------------------------------
+# tid=90102e6d83ad
+# # 加载单个文件或遍历加载目录下所有文件
+# source "${TmpDir_Images_Sub}DATA_Images_${tid}.sh"
+# eval echo 镜像完整ID: \${INFO_Images_${tid}_ID}
+# eval echo 镜像创建时间: \${INFO_Images_${tid}_Created}
+# eval echo Docker版本: \${INFO_Images_${tid}_DockerVersion}
+# eval echo 镜像作者: \${INFO_Images_${tid}_Author}
+# eval echo 镜像架构: \${INFO_Images_${tid}_Architecture}
+# eval echo 镜像操作系统: \${INFO_Images_${tid}_Os}
+# eval echo 镜像大小: \${INFO_Images_${tid}_Size}
+# eval echo 仓库和标签: \${INFO_Images_${tid}_RepoTags[0]}
+# eval echo 仓库和标签: \${INFO_Images_${tid}_RepoTags[1]}
+# echo ----------------------------------------------
+# echo IFS:"${IFS}"
+
+
+# ================================================== 
+# 函数名称：Infos_Container			 					  	 
+# 函数功能：容器详情  							 
+# 函数参数：			 		 	  				 
+#     		 $1:   容器ID				      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# INFO_Containers_${ID}_ID                            : 容器完整ID
+# INFO_Containers_${ID}_Created                       : 容器创建时间
+# INFO_Containers_${ID}_Image                         : 镜像ID
+# INFO_Containers_${ID}_Platform                      : 平台
+# INFO_Containers_${ID}_State_Status                  : 状态(running|exited|paused)
+# INFO_Containers_${ID}_State_Running                 : 运行中(true|false)
+# INFO_Containers_${ID}_State_Paused                  : 暂停中(true|false)
+# INFO_Containers_${ID}_State_StartedAt               : 开始时间
+# INFO_Containers_${ID}_HostConfig_RestartPolicy_Name : 重启策略
+# INFO_Containers_${ID}_HostConfig_Privileged         : 特权模式
+# INFO_Containers_${ID}_NetworkSettings_Gateway       : 网关
+# INFO_Containers_${ID}_NetworkSettings_IPAddress     : IP
+# INFO_Containers_${ID}_NetworkSettings_MacAddress    : MAC
+# INFO_Containers_${ID}_Config_Hostname               : 主机名
+# INFO_Containers_${ID}_Config_User                   : 用户
+# INFO_Containers_${ID}_Config_Tty                    : TTY
+# INFO_Containers_${ID}_Config_Image                  : 镜像名称
+# INFO_Containers_${ID}_Config_WorkingDir             : 工作目录
+# INFO_Containers_${ID}_Name                          : 容器名称
+# INFO_Containers_${ID}_Mounts_Source[0]                : 挂载 源目录
+# INFO_Containers_${ID}_Mounts_Destination[0]           : 挂载 目标目录
+# INFO_Containers_${ID}_Mounts_Mode[0]                  : 挂载 模式
+# INFO_Containers_${ID}_Mounts_SourceDestinationMode[0] : 挂载 源目录:目标目录:模式	
+# INFO_Containers_${ID}_NetworkSettings_Ports_ContainerPort[0] :容器端口 
+# INFO_Containers_${ID}_NetworkSettings_Ports_HostIp[0] : 主机IP(0.0.0.0)
+# INFO_Containers_${ID}_NetworkSettings_Ports_HostPort[0] : 主机端口			  
+# ================================================== 
+function Infos_Container(){
+	# 容器ID
+	ID="$1"
+	[ "${ID}" == "" ] &&  echo 'Infos_Container()：容器ID不能为空'  &&    return 1
+	
+	IFS="&"
+	######## 非数组储值 ########
+	# 源数据字符串	
+	# 容器ID#创建时间#镜像ID#平台#状态#运行中#暂停中#开始时间#重启策略#特权模式#网关#IP#MAC#主机名#用户#TTY#镜像名称#工作目录#容器名称
+	OriginalStr_01=`docker container inspect --format="{{.Id}}#'{{.Created}}'#{{.Image}}#{{.Platform}}#{{.State.Status}}#{{.State.Running}}#{{.State.Paused}}#'{{.State.StartedAt}}'#{{.HostConfig.RestartPolicy.Name}}#{{.HostConfig.Privileged}}#'{{.NetworkSettings.Gateway}}'#'{{.NetworkSettings.IPAddress}}'#'{{.NetworkSettings.MacAddress}}'#{{.Config.Hostname}}#'{{.Config.User}}'#{{.Config.Tty}}#{{.Config.Image}}#{{.Config.WorkingDir}}#{{.Name}}" ${ID}`
+	
+	echo "#!/bin/bash">"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+	b=0
+	echo $OriginalStr_01 |while read -r line_01
+	do
+		#echo $b : $line_01
+		# 设置分割符(源数据的预定义是#)	
+		IFS="#"
+		# 读入到数组
+		brr=($line_01)
+		# 容器名称( / 替换为空)
+		ContainerName=`echo ${brr[18]} | sed 's/\///g'`
+		# 时间处理  T=>" " Z=>""
+		brr[1]=`echo ${brr[1]} | sed s/T/\ /g | sed s/Z//g`
+		brr[7]=`echo ${brr[7]} | sed s/T/\ /g | sed s/Z//g`
+		echo "INFO_Containers_${ID}_ID=\"${brr[0]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_Created=\"${brr[1]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_Image=\"${brr[2]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_Platform=\"${brr[3]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_State_Status=\"${brr[4]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_State_Running=\"${brr[5]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_State_Paused=\"${brr[6]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_State_StartedAt=\"${brr[7]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_HostConfig_RestartPolicy_Name=\"${brr[8]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_HostConfig_Privileged=\"${brr[9]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_NetworkSettings_Gateway=\"${brr[10]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_NetworkSettings_IPAddress=\"${brr[11]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_NetworkSettings_MacAddress=\"${brr[12]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_Config_Hostname=\"${brr[13]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_Config_User=\"${brr[14]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_Config_Tty=\"${brr[15]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_Config_Image=\"${brr[16]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_Config_WorkingDir=\"${brr[17]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_Name=\"${ContainerName}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		let b++	
+	done	
+	
+	######## 数组储值 ########
+	# 挂载
+	# 源目录#目标目录#模式	
+	OriginalStr_02=`docker container inspect --format="{{range .Mounts}}{{.Source}}#{{.Destination}}#{{.Mode}}{{println}}{{end}}"  ${ID}`
+
+	c=0
+	echo $OriginalStr_02 |while read -r line_02
+	do
+		#echo $b : $line_02
+		# 设置分割符(源数据的预定义是#)	
+		IFS="#"
+		# 读入到数组
+		crr=($line_02)
+		echo "INFO_Containers_${ID}_Mounts_Source[${c}]=\"${crr[0]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_Mounts_Destination[${c}]=\"${crr[1]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_Mounts_Mode[${c}]=\"${crr[2]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		[ "${crr[0]}" != "" ] && echo "INFO_Containers_${ID}_Mounts_SourceDestinationMode[${c}]=\"${crr[0]}:${crr[1]}:${crr[2]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		let c++	
+	done	
+	
+	# 数据为多行数据，无需分割读入数组
+	# 86/tcp#0.0.0.0#8086
+	# 9000/tcp#
+	#
+	# 网络端口映射(外层双引号时，里面的变量要转义)
+	# 容器端口#主机IP#主机端口
+	#OriginalStr_03=`docker inspect --format="{{range \$ContainerPort, \$conf := .NetworkSettings.Ports}}{{\$ContainerPort}}#{{range \$conf}}{{.HostIp}}#{{.HostPort}}{{println}}{{end}}{{end}}"  ${ID}`
+	OriginalStr_03=`docker container inspect --format='{{range $ContainerPort,$conf := .NetworkSettings.Ports}}{{$ContainerPort}}#{{range $conf}}{{.HostIp}}#{{.HostPort}}{{println}}{{end}}{{end}}'  ${ID}`	
+	d=0
+	echo $OriginalStr_03 |while read -r line_03
+	do		
+		#echo $k : $line_03	
+		# 设置分割符(源数据的预定义是#)	
+		IFS="#"
+		# 读入到数组
+		drr=($line_03)
+		echo "INFO_Containers_${ID}_NetworkSettings_Ports_ContainerPort[${d}]=\"${drr[0]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_NetworkSettings_Ports_HostIp[${d}]=\"${drr[1]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		echo "INFO_Containers_${ID}_NetworkSettings_Ports_HostPort[${d}]=\"${drr[2]}\"">>"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+		let d++	
+	done
+	
+	# 加载文件
+	source "${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+	IFS=${oldIFS}
+	# 时间戳
+	echo "`date +%s`">"${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh.time"
+	
+	[ "${Sys_Debug}" == 1 ] && echo cat "${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"
+	# 清除变量
+	unset OriginalStr_01
+	unset OriginalStr_02
+	unset OriginalStr_03
+	unset b
+	unset c
+	unset d
+	
+	return 0
+}
+##### 函数测试 #####
+# tid=33c10683dcb8
+# tid=c151594a491f
+# Infos_Container  "${tid}"
+# echo ----------------------------------------------
+# eval echo 容器完整ID: \${INFO_Containers_${tid}_ID}
+# eval echo 容器名称: \${INFO_Containers_${tid}_Name}
+# eval echo 容器创建时间: \${INFO_Containers_${tid}_Created}
+# eval echo 镜像ID: \${INFO_Containers_${tid}_Image}
+# eval echo 平台: \${INFO_Containers_${tid}_Platform}
+# eval echo 状态: \${INFO_Containers_${tid}_State_Status}
+# eval echo 运行中: \${INFO_Containers_${tid}_State_Running}
+# eval echo 暂停中: \${INFO_Containers_${tid}_State_Paused}
+# eval echo 开始时间: \${INFO_Containers_${tid}_State_StartedAt}
+# eval echo 重启策略: \${INFO_Containers_${tid}_HostConfig_RestartPolicy_Name}
+# eval echo 特权模式: \${INFO_Containers_${tid}_HostConfig_Privileged}
+# eval echo 网关: \${INFO_Containers_${tid}_NetworkSettings_Gateway}
+# eval echo IP: \${INFO_Containers_${tid}_NetworkSettings_IPAddress}
+# eval echo MAC: \${INFO_Containers_${tid}_NetworkSettings_MacAddress}
+# eval echo 主机名: \${INFO_Containers_${tid}_Config_Hostname}
+# eval echo 用户: \${INFO_Containers_${tid}_Config_User}
+# eval echo TTY: \${INFO_Containers_${tid}_Config_Tty}
+# eval echo 镜像名称: \${INFO_Containers_${tid}_Config_Image}
+# eval echo 工作目录: \${INFO_Containers_${tid}_Config_WorkingDir}
+# eval echo 挂载 源目录: \${INFO_Containers_${tid}_Mounts_Source[0]}
+# eval echo 挂载 目标目录: \${INFO_Containers_${tid}_Mounts_Destination[0]}
+# eval echo 挂载 模式: \${INFO_Containers_${tid}_Mounts_Mode[0]}
+# eval echo 挂载 源目录:目标目录:模式	 : \${INFO_Containers_${tid}_Mounts_SourceDestinationMode[0]}
+# eval echo 容器端口[0] :  \${INFO_Containers_${ID}_NetworkSettings_Ports_ContainerPort[0]}
+# eval echo 主机IP[0] :  \${INFO_Containers_${ID}_NetworkSettings_Ports_HostIp[0]}
+# eval echo 主机端口[0] :  \${INFO_Containers_${ID}_NetworkSettings_Ports_HostPort[0]}
+# echo ----------------------------------------------
+
+
+# ================================================== 
+# 函数名称：Infos_Containers		 					  	 
+# 函数功能：容器列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   完全刷新(1:是|0:否<默认>)				      	 
+#     		         获取每个容器详情			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+#
+# INFO_Containers_ID[1]               : 容器ID
+# INFO_Containers_Image[1]            : 镜像
+# INFO_Containers_CreatedAt[1]        : 创建容器的时间
+# INFO_Containers_RunningFor[1]       : 容器启动以来的时间
+# INFO_Containers_Ports[1]            : 暴露的端口
+# INFO_Containers_Status[1]           : 容器状态
+# INFO_Containers_Names[1]            : 容器名称
+# INFO_Containers_Networks[1]         : 容器网络
+# INFO_Containers_Size[1]             : 容器磁盘大小
+# INFO_Containers_Status2[1]          : 容器状态(Run|Stop|Pause)
+# ================================================== 
+function Infos_Containers(){
+	# A组：while保存数据到文件，再加载文件(设置变量)
+	# 优点：数据持久化
+	# 缺点：操作复杂
+	# 完全刷新(1:是|0:否<默认>)
+	FullRefresh="${1:-0}"
+	
+	IFS="&"
+	# 源数据字符串
+	# 容器ID#镜像#创建容器的时间#容器启动以来的时间#暴露的端口#容器状态#容器名称#容器网络#容器磁盘大小
+	#------------ 运行中 ------------#
+	run_OriginalStr=`docker ps -a --filter "status=running" --format "{{.ID}}#{{.Image}}#'{{.CreatedAt}}'#'{{.RunningFor}}'#'{{.Ports}}'#{{.Status}}#{{.Names}}#{{.Networks}}#{{.Size}}"`
+	#------------ 已暂停 ------------#
+	pause_OriginalStr=`docker ps -a --filter "status=paused" --format "{{.ID}}#{{.Image}}#'{{.CreatedAt}}'#'{{.RunningFor}}'#'{{.Ports}}'#{{.Status}}#{{.Names}}#{{.Networks}}#{{.Size}}"`
+	#------------ 已停止 ------------#
+	stop_OriginalStr=`docker ps -a --filter "status=exited" --format "{{.ID}}#{{.Image}}#'{{.CreatedAt}}'#'{{.RunningFor}}'#'{{.Ports}}'#{{.Status}}#{{.Names}}#{{.Networks}}#{{.Size}}"`
+	
+	# 数据持久化文件
+	DATA_Containers="${TmpDir_Containers}Data_Containers.sh"
+	DATA_Containers_Count="${TmpDir_Containers}Data_Containers.Count.sh"
+	
+	echo "#!/bin/bash">"${DATA_Containers}"
+	
+	i=1
+	# 运行中
+	if [ "${run_OriginalStr}" != "" ];then
+		echo $run_OriginalStr | while read -r runline
+		do
+			#echo $i : '$runline'
+			# 设置分割符(源数据的预定义是#)	
+			IFS="#"
+			# 读入到数组
+			arr=($runline)
+			ID="${arr[0]}"
+			echo "INFO_Containers_ID[${i}]=\"${arr[0]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Image[${i}]=\"${arr[1]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_CreatedAt[${i}]=\"${arr[2]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_RunningFor[${i}]=\"${arr[3]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Ports[${i}]=\"${arr[4]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Status[${i}]=\"${arr[5]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Names[${i}]=\"${arr[6]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Networks[${i}]=\"${arr[7]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Size[${i}]=\"${arr[8]}\"">>"${DATA_Containers}"
+			# 新增项   INFO_Containers_Status2:容器状态(Run|Stop|Pause)
+			echo "INFO_Containers_Status2[${i}]=\"Run\"">>"${DATA_Containers}"	
+			# 完全刷新: 获取每个容器详情
+			[ "${FullRefresh}" == 1 ] && Infos_Container  "${ID}"
+			let i++	
+			echo "#!/bin/bash">"${DATA_Containers_Count}"
+			echo "i=${i}">>"${DATA_Containers_Count}"		
+		done
+	fi
+	# 已暂停
+	if [ "${pause_OriginalStr}" != "" ];then
+		[ "${run_OriginalStr}" != "" ] && source "${DATA_Containers_Count}"	
+		echo $pause_OriginalStr | while read -r pauseline
+		do
+			#echo $i : '$pauseline'
+			# 设置分割符(源数据的预定义是#)	
+			IFS="#"
+			# 读入到数组
+			arr=($pauseline)
+			ID="${arr[0]}"
+			echo "INFO_Containers_ID[${i}]=\"${arr[0]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Image[${i}]=\"${arr[1]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_CreatedAt[${i}]=\"${arr[2]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_RunningFor[${i}]=\"${arr[3]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Ports[${i}]=\"${arr[4]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Status[${i}]=\"${arr[5]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Names[${i}]=\"${arr[6]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Networks[${i}]=\"${arr[7]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Size[${i}]=\"${arr[8]}\"">>"${DATA_Containers}"
+			# 新增项   INFO_Containers_Status2:容器状态(Run|Stop|Pause)
+			echo "INFO_Containers_Status2[${i}]=\"Pause\"">>"${DATA_Containers}"	
+			# 完全刷新: 获取每个容器详情
+			[ "${FullRefresh}" == 1 ] && Infos_Container  "${ID}"
+			let i++	
+			echo "#!/bin/bash">"${DATA_Containers_Count}"
+			echo "i=${i}">>"${DATA_Containers_Count}"		
+		done
+	fi
+	# 已停止
+	if [ "${stop_OriginalStr}" != "" ];then
+		if [ "${run_OriginalStr}" != "" ] || [ "${pause_OriginalStr}" != "" ];then
+			source "${DATA_Containers_Count}"
+		fi	
+		echo $stop_OriginalStr | while read -r stopline
+		do
+			#echo $i : '$stopline'
+			# 设置分割符(源数据的预定义是#)	
+			IFS="#"
+			# 读入到数组
+			arr=($stopline)
+			ID="${arr[0]}"
+			echo "INFO_Containers_ID[${i}]=\"${arr[0]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Image[${i}]=\"${arr[1]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_CreatedAt[${i}]=\"${arr[2]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_RunningFor[${i}]=\"${arr[3]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Ports[${i}]=\"${arr[4]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Status[${i}]=\"${arr[5]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Names[${i}]=\"${arr[6]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Networks[${i}]=\"${arr[7]}\"">>"${DATA_Containers}"
+			echo "INFO_Containers_Size[${i}]=\"${arr[8]}\"">>"${DATA_Containers}"
+			# 新增项   INFO_Containers_Status2:容器状态(Run|Stop|Pause)
+			echo "INFO_Containers_Status2[${i}]=\"Stop\"">>"${DATA_Containers}"	
+			# 完全刷新: 获取每个容器详情
+			[ "${FullRefresh}" == 1 ] && Infos_Container  "${ID}"
+			let i++					
+		done
+	fi	
+	
+	IFS=${oldIFS}
+	# 加载文件
+	source "${DATA_Containers}"
+	# 时间戳
+	echo "`date +%s`">"${DATA_Containers}.time"
+	
+	[ "${Sys_Debug}" == 1 ] && echo cat "${DATA_Containers}" 
+	# 清除变量
+	unset FullRefresh
+	unset run_OriginalStr
+	unset run_str
+	unset pause_OriginalStr
+	unset pause_str
+	unset stop_OriginalStr
+	unset stop_str
+	unset i
+
+	return 0
+}
+##### 函数测试 #####
+# Infos_Containers
+# echo ---------------------------------------------- 
+# echo 'INFO_Containers_ID[1]:' "${INFO_Containers_ID[1]}"
+# echo 'INFO_Containers_Image[1]:' "${INFO_Containers_Image[1]}"
+# echo 'INFO_Containers_CreatedAt[1]:' "${INFO_Containers_CreatedAt[1]}"
+# echo 'INFO_Containers_RunningFor[1]:' "${INFO_Containers_RunningFor[1]}"
+# echo 'INFO_Containers_Ports[1]:' "${INFO_Containers_Ports[1]}"
+# echo 'INFO_Containers_Status[1]:' "${INFO_Containers_Status[1]}"
+# echo 'INFO_Containers_Names[1]:' "${INFO_Containers_Names[1]}"
+# echo 'INFO_Containers_Networks[1]:' "${INFO_Containers_Networks[1]}"
+# echo 'INFO_Containers_Size[1]:' "${INFO_Containers_Size[1]}"
+# echo 'INFO_Containers_Status2[1]:' "${INFO_Containers_Status2[1]}"
+# echo ----------------------------------------------
+# tid=33c10683dcb8
+# # tid=c151594a491f
+# # 加载单个文件或遍历加载目录下所有文件
+# source "${TmpDir_Containers_Sub}DATA_Containers_${tid}.sh"
+# Infos_Container  "${tid}"
+# echo ----------------------------------------------
+# eval echo 容器完整ID: \${INFO_Containers_${tid}_ID}
+# eval echo 容器名称: \${INFO_Containers_${tid}_Name}
+# eval echo 容器创建时间: \${INFO_Containers_${tid}_Created}
+# eval echo 镜像ID: \${INFO_Containers_${tid}_Image}
+# eval echo 平台: \${INFO_Containers_${tid}_Platform}
+# eval echo 状态: \${INFO_Containers_${tid}_State_Status}
+# eval echo 运行中: \${INFO_Containers_${tid}_State_Running}
+# eval echo 暂停中: \${INFO_Containers_${tid}_State_Paused}
+# eval echo 开始时间: \${INFO_Containers_${tid}_State_StartedAt}
+# eval echo 重启策略: \${INFO_Containers_${tid}_HostConfig_RestartPolicy_Name}
+# eval echo 特权模式: \${INFO_Containers_${tid}_HostConfig_Privileged}
+# eval echo 网关: \${INFO_Containers_${tid}_NetworkSettings_Gateway}
+# eval echo IP: \${INFO_Containers_${tid}_NetworkSettings_IPAddress}
+# eval echo MAC: \${INFO_Containers_${tid}_NetworkSettings_MacAddress}
+# eval echo 主机名: \${INFO_Containers_${tid}_Config_Hostname}
+# eval echo 用户: \${INFO_Containers_${tid}_Config_User}
+# eval echo TTY: \${INFO_Containers_${tid}_Config_Tty}
+# eval echo 镜像名称: \${INFO_Containers_${tid}_Config_Image}
+# eval echo 工作目录: \${INFO_Containers_${tid}_Config_WorkingDir}
+# eval echo 挂载 源目录: \${INFO_Containers_${tid}_Mounts_Source[0]}
+# eval echo 挂载 目标目录: \${INFO_Containers_${tid}_Mounts_Destination[0]}
+# eval echo 挂载 模式: \${INFO_Containers_${tid}_Mounts_Mode[0]}
+# eval echo 挂载 源目录:目标目录:模式	 : \${INFO_Containers_${tid}_Mounts_SourceDestinationMode[0]}
+# eval echo 容器端口[0] :  \${INFO_Containers_${ID}_NetworkSettings_Ports_ContainerPort[0]}
+# eval echo 主机IP[0] :  \${INFO_Containers_${ID}_NetworkSettings_Ports_HostIp[0]}
+# eval echo 主机端口[0] :  \${INFO_Containers_${ID}_NetworkSettings_Ports_HostPort[0]}
+# echo ----------------------------------------------
+
+
+# ================================================== 
+# 函数名称：Infos_Network			 					  	 
+# 函数功能：网络详情  							 
+# 函数参数：			 		 	  				 
+#     		 $1:   网络ID				      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# INFO_Networks_${ID}_Name          : 网络名称
+# INFO_Networks_${ID}_ID            : 网络完整ID
+# INFO_Networks_${ID}_Created       : 创建时间
+# INFO_Networks_${ID}_Scope         : 网络范围
+# INFO_Networks_${ID}_Driver        : 网络驱动
+# INFO_Networks_${ID}_EnableIPv6    : 启用IPv6
+# INFO_Networks_${ID}_Internal      : 内部网络
+# INFO_Networks_${ID}_IPAM_Driver   : IPAM驱动
+# INFO_Networks_${ID}_IPAM_Subnet   : IPAM子网
+# INFO_Networks_${ID}_IPAM_Gateway  : IPAM网关	
+# INFO_Networks_${ID}_Container_ID[0]          : 容器完整ID
+# INFO_Networks_${ID}_Container_Name[0]        : 容器名称
+# INFO_Networks_${ID}_Container_MacAddress[0]  : 容器MAC
+# INFO_Networks_${ID}_Container_IPv4Address[0] : 容器IP4
+# INFO_Networks_${ID}_Container_IPv6Address[0] : 容器IP6
+# INFO_Networks_${ID}_Labels[0]	               : 网络标签			  
+# ================================================== 
+function Infos_Network(){
+	# 网络ID
+	ID="$1"
+	[ "${ID}" == "" ] &&  echo 'Infos_Network()：网络ID不能为空'  &&    return 1
+	
+	IFS="&"
+	######## 非数组储值 ########
+	# 源数据字符串
+	# 网络名称#网络完整ID#创建时间#网络范围#网络驱动#启用IPv6#内部网络#IPAM驱动#IPAM子网#IPAM网关
+	OriginalStr_01=`docker network inspect --format "{{.Name}}#{{.Id}}#'{{.Created}}'#{{.Scope}}#{{.Driver}}#{{.EnableIPv6}}#{{.Internal}}#{{.IPAM.Driver}}#{{range  .IPAM.Config}}{{.Subnet}}#{{.Gateway}}{{end}}"  ${ID}`
+
+	echo "#!/bin/bash">"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+	b=0
+	echo $OriginalStr_01 |while read -r line_01
+	do
+		#echo $b : $line_01
+		# 设置分割符(源数据的预定义是#)	
+		IFS="#"
+		# 读入到数组
+		brr=($line_01)
+		# 时间处理  T=>" " Z=>""
+		brr[2]=`echo ${brr[2]} | sed s/T/\ /g | sed s/Z//g`
+		echo "INFO_Networks_${ID}_Name=\"${brr[0]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		echo "INFO_Networks_${ID}_ID=\"${brr[1]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		echo "INFO_Networks_${ID}_Created=\"${brr[2]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		echo "INFO_Networks_${ID}_Scope=\"${brr[3]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		echo "INFO_Networks_${ID}_Driver=\"${brr[4]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		echo "INFO_Networks_${ID}_EnableIPv6=\"${brr[5]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		echo "INFO_Networks_${ID}_Internal=\"${brr[6]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		echo "INFO_Networks_${ID}_IPAM_Driver=\"${brr[7]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		echo "INFO_Networks_${ID}_IPAM_Subnet=\"${brr[8]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		echo "INFO_Networks_${ID}_IPAM_Gateway=\"${brr[9]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		let b++	
+	done	
+	
+	# 源数据字符串
+	# 容器完整ID#容器名称#容器MAC#容器IP4#容器IP6
+	OriginalStr_02=`docker network inspect --format "{{range \\$ContainerID,\\$conf := .Containers}}{{\\$ContainerID}}#{{\\$conf.Name}}#'{{\\$conf.MacAddress}}'#'{{\\$conf.IPv4Address}}'#'{{\\$conf.IPv6Address}}'{{println}}{{end}}"  ${ID}`
+	
+	c=0
+	echo $OriginalStr_02 |while read -r line_02
+	do
+		#echo $c : $line_02
+		# 设置分割符(源数据的预定义是#)	
+		IFS="#"
+		# 读入到数组
+		crr=($line_02)
+		echo "INFO_Networks_${ID}_Container_ID[${c}]=\"${crr[0]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		echo "INFO_Networks_${ID}_Container_Name[${c}]=\"${crr[1]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		echo "INFO_Networks_${ID}_Container_MacAddress[${c}]=\"${crr[2]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		echo "INFO_Networks_${ID}_Container_IPv4Address[${c}]=\"${crr[3]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		echo "INFO_Networks_${ID}_Container_IPv6Address[${c}]=\"${crr[4]}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"		
+		let c++	
+	done
+	
+	######## 数组储值 ########
+	# 数据为多行数据，无需分割读入数组：
+	# com.docker.compose.network:lnmp_net
+	# com.docker.compose.project:a01
+	# com.docker.compose.version:1.24.1
+	#
+	# 源数据字符串
+	# 标签列表	
+	OriginalStr_03=`docker network inspect --format '{{range $k,$v := .Labels}}{{$k}}:{{$v}}{{println}}{{end}}'  ${ID}`
+		
+	d=0
+	echo $OriginalStr_03 |while read -r line_03
+	do		
+		#echo $d : $line_03	
+		echo "INFO_Networks_${ID}_Labels[${d}]=\"${line_03}\"">>"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+		let d++	
+	done
+	
+	# 加载文件
+	source "${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+	IFS=${oldIFS}
+	# 时间戳
+	echo "`date +%s`">"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh.time"
+	
+	[ "${Sys_Debug}" == 1 ] && echo cat "${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"
+	# 清除变量
+	unset OriginalStr_01
+	unset OriginalStr_02
+	unset OriginalStr_03
+	unset b
+	unset c
+	unset d
+	
+	return 0
+}
+##### 函数测试 #####
+# tid=79f6f0e6dc97
+# Infos_Network  "${tid}"
+# echo ----------------------------------------------
+# eval echo 网络名称: \${INFO_Networks_${tid}_Name}
+# eval echo 网络完整ID: \${INFO_Networks_${tid}_ID}
+# eval echo 网络创建时间: \${INFO_Networks_${tid}_Created}
+# eval echo 网络范围: \${INFO_Networks_${tid}_Scope}
+# eval echo 网络驱动: \${INFO_Networks_${tid}_Driver}
+# eval echo 启用IPv6: \${INFO_Networks_${tid}_EnableIPv6}
+# eval echo 内部网络: \${INFO_Networks_${tid}_Internal}
+# eval echo IPAM驱动: \${INFO_Networks_${tid}_IPAM_Driver}
+# eval echo IPAM子网: \${INFO_Networks_${tid}_IPAM_Subnet}
+# eval echo IPAM网关: \${INFO_Networks_${tid}_IPAM_Gateway}
+# eval echo 容器完整ID[0]: \${INFO_Networks_${tid}_Container_ID[0]}
+# eval echo 容器名称[0]: \${INFO_Networks_${tid}_Container_Name[0]}
+# eval echo 容器MAC[0]: \${INFO_Networks_${tid}_Container_MacAddress[0]}
+# eval echo 容器IP4[0]: \${INFO_Networks_${tid}_Container_IPv4Address[0]}
+# eval echo 容器IP6[0]: \${INFO_Networks_${tid}_Container_IPv6Address[0]}
+# eval echo 网络标签[0]: \${INFO_Networks_${tid}_Labels[0]}
+# echo ----------------------------------------------
+
+
+# ================================================== 
+# 函数名称：Infos_Networks		 					  	 
+# 函数功能：网络列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   完全刷新(1:是|0:否<默认>)				      	 
+#     		         获取每个网络详情			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# INFO_Networks_ID[1]               : 网络ID
+# INFO_Networks_Name[1]             : 网络名称
+# INFO_Networks_Driver[1]           : 网络驱动
+# INFO_Networks_Scope[1]            : 网络范围
+# INFO_Networks_IPv6[1]             : 启用IPv6
+# INFO_Networks_Internal[1]         : 内部网络
+# INFO_Networks_CreatedAt[1]        : 创建时间					  
+# ================================================== 
+function Infos_Networks(){
+	# A组：while保存数据到文件，再加载文件(设置变量)
+	# 优点：数据持久化
+	# 缺点：操作复杂
+	# 完全刷新(1:是|0:否<默认>)
+	FullRefresh="${1:-0}"
+	
+	IFS="&"
+	# 源数据字符串
+	# 网络ID#网络名称#网络驱动#网络范围#启用IPv6#内部网络#创建时间
+	OriginalStr=`docker network ls --format "{{.ID}}#{{.Name}}#{{.Driver}}#{{.Scope}}#{{.IPv6}}#{{.Internal}}#'{{.CreatedAt}}'"`
+	
+	# 数据持久化文件
+	DATA_Networks="${TmpDir_Networks}Data_Networks.sh"
+
+	echo "#!/bin/bash">"${DATA_Networks}"
+	i=1
+	echo $OriginalStr | while read -r line
+	do
+		#echo $i : $line
+		# 设置分割符(源数据的预定义是#)	
+		IFS="#"
+		# 读入到数组
+		arr=($line)
+		ID="${arr[0]}"
+		echo "INFO_Networks_ID[${i}]=\"${arr[0]}\"">>"${DATA_Networks}"
+		echo "INFO_Networks_Name[${i}]=\"${arr[1]}\"">>"${DATA_Networks}"
+		echo "INFO_Networks_Driver[${i}]=\"${arr[2]}\"">>"${DATA_Networks}"
+		echo "INFO_Networks_Scope[${i}]=\"${arr[3]}\"">>"${DATA_Networks}"
+		echo "INFO_Networks_IPv6[${i}]=\"${arr[4]}\"">>"${DATA_Networks}"
+		echo "INFO_Networks_Internal[${i}]=\"${arr[5]}\"">>"${DATA_Networks}"
+		echo "INFO_Networks_CreatedAt[${i}]=\"${arr[6]}\"">>"${DATA_Networks}"		
+		# 完全刷新: 获取每个网络详情
+		[ "${FullRefresh}" == 1 ] && Infos_Network  "${ID}"
+		let i++	
+	done
+	IFS=${oldIFS}
+	# 加载文件
+	source "${DATA_Networks}"
+	# 时间戳
+	echo "`date +%s`">"${DATA_Networks}.time"
+	
+	[ "${Sys_Debug}" == 1 ] && echo cat "${DATA_Networks}" 
+	# 清除变量
+	unset FullRefresh
+	unset str
+	unset OriginalStr
+	unset i
+
+	return 0
+}
+##### 函数测试 #####
+# Infos_Networks
+# echo ---------------------------------------------- 
+# echo 'INFO_Networks_ID[1]:' "${INFO_Networks_ID[1]}"
+# echo 'INFO_Networks_Name[1]:' "${INFO_Networks_Name[1]}"
+# echo 'INFO_Networks_Driver[1]:' "${INFO_Networks_Driver[1]}"
+# echo 'INFO_Networks_Scope[1]:' "${INFO_Networks_Scope[1]}"
+# echo 'INFO_Networks_IPv6[1]:' "${INFO_Networks_IPv6[1]}"
+# echo 'INFO_Networks_Internal[1]:' "${INFO_Networks_Internal[1]}"
+# echo 'INFO_Networks_CreatedAt[1]:' "${INFO_Networks_CreatedAt[1]}"
+# echo ----------------------------------------------
+# tid=79f6f0e6dc97
+# # 加载单个文件或遍历加载目录下所有文件
+# source "${TmpDir_Networks_Sub}DATA_Networks_${tid}.sh"
+# echo ----------------------------------------------
+# eval echo 网络名称: \${INFO_Networks_${tid}_Name}
+# eval echo 网络完整ID: \${INFO_Networks_${tid}_ID}
+# eval echo 网络创建时间: \${INFO_Networks_${tid}_Created}
+# eval echo 网络范围: \${INFO_Networks_${tid}_Scope}
+# eval echo 网络驱动: \${INFO_Networks_${tid}_Driver}
+# eval echo 启用IPv6: \${INFO_Networks_${tid}_EnableIPv6}
+# eval echo 内部网络: \${INFO_Networks_${tid}_Internal}
+# eval echo IPAM驱动: \${INFO_Networks_${tid}_IPAM_Driver}
+# eval echo IPAM子网: \${INFO_Networks_${tid}_IPAM_Subnet}
+# eval echo IPAM网关: \${INFO_Networks_${tid}_IPAM_Gateway}
+# eval echo 容器完整ID[0]: \${INFO_Networks_${tid}_Container_ID[0]}
+# eval echo 容器名称[0]: \${INFO_Networks_${tid}_Container_Name[0]}
+# eval echo 容器MAC[0]: \${INFO_Networks_${tid}_Container_MacAddress[0]}
+# eval echo 容器IP4[0]: \${INFO_Networks_${tid}_Container_IPv4Address[0]}
+# eval echo 容器IP6[0]: \${INFO_Networks_${tid}_Container_IPv6Address[0]}
+# eval echo 网络标签[0]: \${INFO_Networks_${tid}_Labels[0]}
+# echo ----------------------------------------------
+
+ 
+# ================================================== 
+# 函数名称：Infos_Volume			 					  	 
+# 函数功能：卷详情  							 
+# 函数参数：			 		 	  				 
+#     		 $1:   卷ID				      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# INFO_Volumes_${ID}_Name       : 卷名称
+# INFO_Volumes_${ID}_Mountpoint : 卷挂载点 
+# INFO_Volumes_${ID}_CreatedAt  : 创建时间
+# INFO_Volumes_${ID}_Scope      : 卷范围
+# INFO_Volumes_${ID}_Driver     : 卷驱动						  
+# ================================================== 
+function Infos_Volume(){
+	# 卷ID
+	ID="$1"
+	[ "${ID}" == "" ] &&  echo 'Infos_Volume()：卷ID不能为空'  &&    return 1
+	
+	IFS="&"
+	######## 非数组储值 ########
+	# 源数据字符串
+	# 卷名称#卷挂载点#创建时间#卷范围#卷驱动
+	OriginalStr_01=`docker volume inspect --format "{{.Name}}#{{.Mountpoint}}#'{{.CreatedAt}}'#{{.Scope}}#{{.Driver}}"  ${ID}`
+
+	echo "#!/bin/bash">"${TmpDir_Volumes_Sub}DATA_Volumes_${ID}.sh"
+	b=0
+	echo $OriginalStr_01 |while read -r line_01
+	do
+		#echo $b : $line_01
+		# 设置分割符(源数据的预定义是#)	
+		IFS="#"
+		# 读入到数组
+		brr=($line_01)
+		# 时间处理  T=>" " Z=>""
+		brr[2]=`echo ${brr[2]} | sed s/T/\ /g | sed s/Z//g`
+		echo "INFO_Volumes_${ID}_Name=\"${brr[0]}\"">>"${TmpDir_Volumes_Sub}DATA_Volumes_${ID}.sh"
+		echo "INFO_Volumes_${ID}_Mountpoint=\"${brr[1]}\"">>"${TmpDir_Volumes_Sub}DATA_Volumes_${ID}.sh"
+		echo "INFO_Volumes_${ID}_CreatedAt=\"${brr[2]}\"">>"${TmpDir_Volumes_Sub}DATA_Volumes_${ID}.sh"
+		echo "INFO_Volumes_${ID}_Scope=\"${brr[3]}\"">>"${TmpDir_Volumes_Sub}DATA_Volumes_${ID}.sh"
+		echo "INFO_Volumes_${ID}_Driver=\"${brr[4]}\"">>"${TmpDir_Volumes_Sub}DATA_Volumes_${ID}.sh"
+		let b++	
+	done	
+
+	# 加载文件
+	source "${TmpDir_Volumes_Sub}DATA_Volumes_${ID}.sh"
+	IFS=${oldIFS}
+	# 时间戳
+	echo "`date +%s`">"${TmpDir_Volumes_Sub}DATA_Volumes_${ID}.sh.time"
+	
+	[ "${Sys_Debug}" == 1 ] && echo cat "${TmpDir_Volumes_Sub}DATA_Volumes_${ID}.sh"
+	# 清除变量
+	unset OriginalStr_01
+	unset b
+	
+	return 0
+}
+##### 函数测试 #####
+# tid=8c170a5fd6a993c65a87a0bf5446127bf95dc96852e1e74f3f6810fb1c2c34ae
+# Infos_Volume  "${tid}"
+# echo ----------------------------------------------
+# eval echo 卷名称: \${INFO_Volumes_${tid}_Name}
+# eval echo 卷挂载点: \${INFO_Volumes_${tid}_Mountpoint}
+# eval echo 创建时间: \${INFO_Volumes_${tid}_CreatedAt}
+# eval echo 卷范围: \${INFO_Volumes_${tid}_Scope}
+# eval echo 卷驱动: \${INFO_Volumes_${tid}_Driver}
+# echo ----------------------------------------------
+
+
+# ================================================== 
+# 函数名称：Infos_Volumes		 					  	 
+# 函数功能：卷列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   完全刷新(1:是|0:否<默认>)				      	 
+#     		         获取每个卷详情			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# INFO_Volumes_Name[1]       : 卷名称
+# INFO_Volumes_Driver[1]     : 卷驱动
+# INFO_Volumes_Scope[1]      : 卷范围
+# INFO_Volumes_Mountpoint[1] : 卷挂载点
+# INFO_Volumes_isolate[1]    : 是否孤立(true:孤立|false:不孤立)
+# INFO_Volumes_CreatedAt[1]  : 创建时间					  
+# ================================================== 
+function Infos_Volumes(){
+	# A组：while保存数据到文件，再加载文件(设置变量)
+	# 优点：数据持久化
+	# 缺点：操作复杂
+	# 完全刷新(1:是|0:否<默认>)
+	FullRefresh="${1:-0}"
+	
+	IFS="&"
+	# 源数据字符串
+	# 卷名称#卷驱动#卷范围#卷挂载点
+	# 使用的卷
+	use_OriginalStr=`docker volume ls --filter "dangling=false" --format "{{.Name}}#{{.Driver}}#{{.Scope}}#{{.Mountpoint}}"`
+	# 孤立的卷
+	nouse_OriginalStr=`docker volume ls --filter "dangling=true" --format "{{.Name}}#{{.Driver}}#{{.Scope}}#{{.Mountpoint}}"`
+		
+	# 数据持久化文件
+	DATA_Volumes="${TmpDir_Volumes}Data_Volumes.sh"
+	DATA_Volumes_Count="${TmpDir_Volumes}Data_Volumes.Count.sh"
+
+	echo "#!/bin/bash">"${DATA_Volumes}"
+	
+	i=1
+	# 孤立的卷
+	if [ "${nouse_OriginalStr}" != "" ];then
+		echo $nouse_OriginalStr | while read -r nouseline
+		do
+			#echo $i : '$nouseline'
+			# 设置分割符(源数据的预定义是#)	
+			IFS="#"
+			# 读入到数组
+			arr=($nouseline)
+			ID="${arr[0]}"
+			echo "INFO_Volumes_Name[${i}]=\"${arr[0]}\"">>"${DATA_Volumes}"
+			echo "INFO_Volumes_Driver[${i}]=\"${arr[1]}\"">>"${DATA_Volumes}"
+			echo "INFO_Volumes_Scope[${i}]=\"${arr[2]}\"">>"${DATA_Volumes}"
+			echo "INFO_Volumes_Mountpoint[${i}]=\"${arr[3]}\"">>"${DATA_Volumes}"
+			# 新增项	isolate:孤立的
+			echo "INFO_Volumes_isolate[${i}]=true">>"${DATA_Volumes}"
+			Volumes_CreatedAt=`docker volume inspect --format="'{{.CreatedAt}}'"  ${ID}`			
+			Volumes_CreatedAt=`echo ${Volumes_CreatedAt} | sed s/T/\ /g | sed s/Z//g`
+			echo "INFO_Volumes_CreatedAt[${i}]=\"${Volumes_CreatedAt}\"">>"${DATA_Volumes}"
+			# 完全刷新: 获取每个卷详情
+			[ "${FullRefresh}" == 1 ] && Infos_Volume  "${ID}"
+			let i++	
+			echo "#!/bin/bash">"${DATA_Volumes_Count}"
+			echo "i=${i}">>"${DATA_Volumes_Count}"		
+		done
+	fi
+	# 使用的卷
+	if [ "${use_OriginalStr}" != "" ];then
+		[ "${nouse_OriginalStr}" != "" ] && source "${DATA_Volumes_Count}"			
+		echo $use_OriginalStr | while read -r useline
+		do
+			#echo $i : '$useline'
+			# 设置分割符(源数据的预定义是#)	
+			IFS="#"
+			# 读入到数组
+			arr=($useline)
+			ID="${arr[0]}"
+			echo "INFO_Volumes_Name[${i}]=\"${arr[0]}\"">>"${DATA_Volumes}"
+			echo "INFO_Volumes_Driver[${i}]=\"${arr[1]}\"">>"${DATA_Volumes}"
+			echo "INFO_Volumes_Scope[${i}]=\"${arr[2]}\"">>"${DATA_Volumes}"
+			echo "INFO_Volumes_Mountpoint[${i}]=\"${arr[3]}\"">>"${DATA_Volumes}"
+			# 新增项	isolate:孤立的
+			echo "INFO_Volumes_isolate[${i}]=false">>"${DATA_Volumes}"
+			Volumes_CreatedAt=`docker volume inspect --format="'{{.CreatedAt}}'"  ${ID}`			
+			Volumes_CreatedAt=`echo ${Volumes_CreatedAt} | sed s/T/\ /g | sed s/Z//g`
+			echo "INFO_Volumes_CreatedAt[${i}]=\"${Volumes_CreatedAt}\"">>"${DATA_Volumes}"
+			# 完全刷新: 获取每个卷详情
+			[ "${FullRefresh}" == 1 ] && Infos_Volume  "${ID}"
+			let i++	
+		done
+	fi	
+	IFS=${oldIFS}
+	# 加载文件
+	source "${DATA_Volumes}"
+	# 时间戳
+	echo "`date +%s`">"${DATA_Volumes}.time"
+	
+	[ "${Sys_Debug}" == 1 ] && echo cat "${DATA_Volumes}" 
+	# 清除变量
+	unset FullRefresh
+	unset use_str
+	unset nouse_str
+	unset use_OriginalStr
+	unset nouse_OriginalStr
+	unset i
+
+	return 0
+}
+##### 函数测试 ##### 
+# Infos_Volumes 1
+# echo ---------------------------------------------- 
+# echo 'INFO_Volumes_Name[1]:' "${INFO_Volumes_Name[1]}"
+# echo 'INFO_Volumes_Driver[1]:' "${INFO_Volumes_Driver[1]}"
+# echo 'INFO_Volumes_Scope[1]:' "${INFO_Volumes_Scope[1]}"
+# echo 'INFO_Volumes_Mountpoint[1]:' "${INFO_Volumes_Mountpoint[1]}"
+# echo 'INFO_Volumes_isolate[1]:' "${INFO_Volumes_isolate[1]}"
+# echo 'INFO_Volumes_CreatedAt[1]:' "${INFO_Volumes_CreatedAt[1]}"
+# echo ----------------------------------------------
+# tid=8c170a5fd6a993c65a87a0bf5446127bf95dc96852e1e74f3f6810fb1c2c34ae
+# # 加载单个文件或遍历加载目录下所有文件
+# source "${TmpDir_Volumes_Sub}DATA_Volumes_${tid}.sh"
+# eval echo 卷名称: \${INFO_Volumes_${tid}_Name}
+# eval echo 卷挂载点: \${INFO_Volumes_${tid}_Mountpoint}
+# eval echo 创建时间: \${INFO_Volumes_${tid}_CreatedAt}
+# eval echo 卷范围: \${INFO_Volumes_${tid}_Scope}
+# eval echo 卷驱动: \${INFO_Volumes_${tid}_Driver}
+# echo ----------------------------------------------
+
+
+# ================================================== 
+# 函数名称：Infos_Search			 					  	 
+# 函数功能：搜索结果						 
+# 函数参数：			 		 	  				 
+#     		 $1:   关键字			      	 
+#     		 $2:   唯一ID			      	 
+#     	   [$3]:   查询数量(默认10)			      	 
+#     	   [$4]:   缓存结果(默认false)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 				 	  
+# "${TmpDir_Searchs_Sub}DATA_Searchs_${ID}.sh":				 	  
+# 	INFO_Searchs_${ID}_Name[1]        : 镜像名称
+# 	INFO_Searchs_${ID}_StarCount[1]   : 星数
+# 	INFO_Searchs_${ID}_IsOfficial[1]  : 官方
+# 	INFO_Searchs_${ID}_IsAutomated[1] : 自动构建
+# 	INFO_Searchs_${ID}_Description[1] : 镜像描述 					  
+# ================================================== 
+function Infos_Search(){
+	# 关键字
+	Keyword="$1"
+	[ "${Keyword}" == "" ] &&  echo 'Infos_Search()：Keyword不能为空'  &&    return 1
+	# ID
+	ID="${2}"
+	[ "${ID}" == "" ] &&  echo 'Infos_Search()：ID不能为空'  &&    return 1
+	# 查询数量
+	limit="${3:-10}"
+	# 是否缓存结果
+	isCache="${4:-false}"	
+	
+	IFS="&"
+	######## 非数组储值 ########
+	# 源数据字符串
+	# 需要联网
+	# 镜像名称#镜像星数#是否官方#是否自动构建#镜像描述	
+	if [ "${SYS_ShowTips}" == "1" ];then
+		OriginalStr_01=`docker search --limit ${limit}  --no-trunc --format "{{.Name}}#{{.StarCount}}#'{{.IsOfficial}}'#'{{.IsAutomated}}'#{{.Description}}"  "${Keyword}"`
+	else
+		OriginalStr_01=`docker search --limit ${limit}  --no-trunc --format "{{.Name}}#{{.StarCount}}#'{{.IsOfficial}}'#'{{.IsAutomated}}'#{{.Description}}"  "${Keyword}" 2>/dev/null`
+	fi
+	#echo  "$?"
+	if [ "$?" != 0 ];then		
+		echo 'Infos_Search()：Error...'
+		IFS=${oldIFS}
+		return 1
+	fi
+	if [ "$?" == 0 ] && [ "${OriginalStr_01}" == "" ];then		
+		echo "${LANG_NoData:-无数据...}"
+		IFS=${oldIFS}
+		return 0
+	fi
+	echo $OriginalStr_01 >"${TmpDir_Searchs}DATA_Searchs.tmp"
+	
+	# 缓存结果
+	[ "${isCache}" == "true" ] && echo "#!/bin/bash">"${TmpDir_Searchs_Sub}DATA_Searchs_${ID}.sh"
+	
+	a=1
+	while read -r line_01
+	do
+		#echo $a : $line_01
+		# 设置分割符(源数据的预定义是#)	
+		IFS="#"
+		# 读入到数组
+		arr=($line_01)
+		# 值处理：" => \" 
+		[ "${Sys_Debug}" == 1 ] && echo arr[4]1: ${arr[4]}		
+		arr[4]="${arr[4]//\"/\\\"}"		
+		[ "${Sys_Debug}" == 1 ] && echo arr[4]2: ${arr[4]}
+		# 值处理： '[OK]' => true ;  空 => false 		
+		[ "${arr[2]}" == "'[OK]'" ] && arr[2]=true || arr[2]=false
+		[ "${arr[3]}" == "'[OK]'" ] && arr[3]=true || arr[3]=false
+		
+		# 设置变量
+		eval INFO_Searchs_${ID}_Name[${a}]=\"${arr[0]}\"		
+		eval INFO_Searchs_${ID}_StarCount[${a}]=\"${arr[1]}\"
+		eval INFO_Searchs_${ID}_IsOfficial[${a}]=\"${arr[2]}\"
+		eval INFO_Searchs_${ID}_IsAutomated[${a}]=\"${arr[3]}\"
+		eval INFO_Searchs_${ID}_Description[${a}]=\"${arr[4]}\"
+		# 缓存结果
+		if [ "${isCache}" == "true" ];then
+			echo "INFO_Searchs_${ID}_Name[${a}]=\"${arr[0]}\"">>"${TmpDir_Searchs_Sub}DATA_Searchs_${ID}.sh"
+			echo "INFO_Searchs_${ID}_StarCount[${a}]=\"${arr[1]}\"">>"${TmpDir_Searchs_Sub}DATA_Searchs_${ID}.sh"
+			echo "INFO_Searchs_${ID}_IsOfficial[${a}]=\"${arr[2]}\"">>"${TmpDir_Searchs_Sub}DATA_Searchs_${ID}.sh"
+			echo "INFO_Searchs_${ID}_IsAutomated[${a}]=\"${arr[3]}\"">>"${TmpDir_Searchs_Sub}DATA_Searchs_${ID}.sh"
+			echo "INFO_Searchs_${ID}_Description[${a}]=\"${arr[4]}\"">>"${TmpDir_Searchs_Sub}DATA_Searchs_${ID}.sh"
+		fi
+		let a++	
+	done < "${TmpDir_Searchs}DATA_Searchs.tmp"
+		
+	# 加载文件
+	[ "${isCache}" == "true" ] && source "${TmpDir_Searchs_Sub}DATA_Searchs_${ID}.sh"
+	IFS=${oldIFS}
+	# 时间戳
+	[ "${isCache}" == "true" ] && echo "`date +%s`">"${TmpDir_Searchs_Sub}DATA_Searchs_${ID}.sh.time"
+	
+	[ "${Sys_Debug}" == 1 ] && echo cat "${TmpDir_Searchs_Sub}DATA_Searchs_${ID}.sh"
+	# 清除变量
+	unset Keyword
+	unset limit
+	unset isCache
+	unset ID
+	unset OriginalStr_01	
+	unset a
+	
+	return 0
+}
+##### 函数测试 #####
+# #Infos_Search  "Hello" "1580658702"  5  true
+# tid="1580658702"
+# echo ----------------------------------------------
+# eval echo 镜像名称: \${INFO_Searchs_${tid}_Name[1]}
+# eval echo 星数: \${INFO_Searchs_${tid}_StarCount[1]}
+# eval echo 官方: \${INFO_Searchs_${tid}_IsOfficial[1]}
+# eval echo 自动构建: \${INFO_Searchs_${tid}_IsAutomated[1]}
+# eval echo 镜像描述: \${INFO_Searchs_${tid}_Description[1]}
+# echo ----------------------------------------------
+
+
+# ================================================== 
+# 函数名称：Infos_Searchs			 					  	 
+# 函数功能：搜索主数据 							 
+# 函数参数：			 		 	  				 
+#     		 $1:   关键字			      	 
+#     	   [$2]:   缓存结果(默认false)			      	 
+#     	   [$3]:   查询数量(默认5)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 
+# SearchsID    : 唯一ID(=${ID})
+# SearchsIndex : 主数据索引
+# 注: 可根据如上变量来获取相关数据，当次调用中有效
+# 
+# "${TmpDir_Searchs}Data_Searchs.sh":
+# 	INFO_Searchs_ID[${SearchsIndex}]      : 唯一ID
+# 	INFO_Searchs_Keyword[${SearchsIndex}] : 关键字
+# 	INFO_Searchs_limit[${SearchsIndex}]   : 查询数量
+# 	INFO_Searchs_Clear[${SearchsIndex}]   : 是否清除(默认: false 清除后需要设置其为true)
+# ================================================== 
+function Infos_Searchs(){
+	# 关键字
+	Keyword="$1"
+	[ "${Keyword}" == "" ] &&  echo 'Infos_Searchs()：Keyword不能为空'  &&    return 1
+	# 查询数量
+	limit="${3:-5}"
+	# 是否缓存结果
+	isCache="${2:-false}"
+	# ID
+	ID=`date +%s`
+	SearchsID="${ID}"
+	# 缓存命中
+	CacheHit="false"	
+	# 当前时间戳(s)
+	NowTime="`date +%s`"
+	#------------------------ 主数据 ------------------------#
+	if [ ! -e "${TmpDir_Searchs}Data_Searchs.sh" ];then
+		# 文件不存在
+		echo "#!/bin/bash">"${TmpDir_Searchs}Data_Searchs.sh"	
+		echo "INFO_Searchs_load=\"true\"">>"${TmpDir_Searchs}Data_Searchs.sh"
+		SearchsIndex=0
+	else
+		# 文件存在
+		if [ "${INFO_Searchs_load}" == "" ];then 
+			source "${TmpDir_Searchs}Data_Searchs.sh"
+		fi
+		# "$((${#INFO_Searchs_ID[@]}-1))" 获取数组最大索引
+		# 当前需要使用的是最大索引+1，所有不需-1
+		SearchsIndex="${#INFO_Searchs_ID[@]}"
+	fi
+	
+	# 对比Keyword，缓存中有则直接返回相关数据，无则生成相关数据
+	i=0
+	for kw in  "${INFO_Searchs_Keyword[@]}"
+	do		
+		cID="${INFO_Searchs_ID[${i}]}"
+		climit="${INFO_Searchs_limit[${i}]}"
+		cClear="${INFO_Searchs_Clear[${i}]}"		
+		# 缓存机制(*.time  FileTime  NowTime_FileTime)
+		if [ -e "${TmpDir_Searchs_Sub}DATA_Searchs_${cID}.sh.time" ];then
+			# 文件存在
+			FileTime=`cat "${TmpDir_Searchs_Sub}DATA_Searchs_${cID}.sh.time"`
+			NowTime_FileTime="$((${NowTime}-${FileTime}))"					
+			# -le <=
+			if [ "${NowTime_FileTime}" -le "${SYS_Timeout}" ];then
+				# 在缓存的有效时间内
+				if [ "${cClear}" == "false" ] && [ "${kw}" == "${Keyword}" ] && [ "${climit}" == "${limit}" ] && [ -e "${TmpDir_Searchs_Sub}DATA_Searchs_${cID}.sh" ];then
+					[ "${SYS_ShowTips}" == 1 ] && echo -e "\033[1;33m${LANG_Infos_Searchs_01:-缓存命中...}\033[0m"
+					CacheHit="true"
+					SearchsIndex="${i}"
+					SearchsID="${INFO_Searchs_ID[${i}]}"
+					source "${TmpDir_Searchs_Sub}DATA_Searchs_${cID}.sh"
+					break
+				fi
+			fi
+		fi				
+		let i++		
+	done
+	#echo CacheHit: ${CacheHit}
+	
+	# 缓存未命中时，生成数据
+	if [ "${CacheHit}" == "false" ];then
+		# 设置变量
+		eval INFO_Searchs_ID[${SearchsIndex}]=\"${ID}\"
+		eval INFO_Searchs_Keyword[${SearchsIndex}]=\"${Keyword}\"
+		eval INFO_Searchs_limit[${SearchsIndex}]=\"${limit}\"
+		eval INFO_Searchs_Clear[${SearchsIndex}]=\"false\"
+		# 缓存结果
+		if [ "${isCache}" == "true" ];then
+			echo "INFO_Searchs_ID[${SearchsIndex}]=\"${ID}\"">>"${TmpDir_Searchs}Data_Searchs.sh"
+			echo "INFO_Searchs_Keyword[${SearchsIndex}]=\"${Keyword}\"">>"${TmpDir_Searchs}Data_Searchs.sh"
+			echo "INFO_Searchs_limit[${SearchsIndex}]=\"${limit}\"">>"${TmpDir_Searchs}Data_Searchs.sh" 
+			echo "INFO_Searchs_Clear[${SearchsIndex}]=\"false\"">>"${TmpDir_Searchs}Data_Searchs.sh"  #是否清除变量及其文件，清除后需要设置其为true
+		fi
+		# 查询
+		Infos_Search  "${Keyword}"  "${ID}"  "${limit}"  "${isCache}"
+	fi
+	#------------------------ 主数据 ------------------------#	
+	# 清除变量
+	unset Keyword
+	unset limit
+	unset isCache
+	unset ID
+	unset OriginalStr_01	
+	unset a
+	unset i
+	unset CacheHit
+	unset cID
+	unset FileTime
+	unset NowTime_FileTime
+	
+	return 0
+}
+##### 函数测试 #####
+# Infos_Searchs  "Hello"  true  5
+# Infos_Searchs  "Hello"  "" 8 
+# tid="${SearchsID}"
+# echo ----------------------------------------------
+# echo SearchsID: "${SearchsID}"
+# echo SearchsIndex: "${SearchsIndex}"
+# echo
+# eval echo 唯一ID: \${INFO_Searchs_ID[${SearchsIndex}]}
+# eval echo 关键字: \${INFO_Searchs_Keyword[${SearchsIndex}]}
+# eval echo 查询数量: \${INFO_Searchs_limit[${SearchsIndex}]}
+# eval echo 是否清除: \${INFO_Searchs_Clear[${SearchsIndex}]}
+# echo
+# eval echo 镜像名称: \${INFO_Searchs_${tid}_Name[1]}
+# eval echo 星数: \${INFO_Searchs_${tid}_StarCount[1]}
+# eval echo 官方: \${INFO_Searchs_${tid}_IsOfficial[1]}
+# eval echo 自动构建: \${INFO_Searchs_${tid}_IsAutomated[1]}
+# eval echo 镜像描述: \${INFO_Searchs_${tid}_Description[1]}
+# echo ----------------------------------------------
+
+
+# ================================================== 
+# 函数名称：Infos_About				  	 
+# 函数功能：关于		 
+# 函数参数：			 		 	  				 
+#     	 [$1]:        	 
+# 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# SYS_About_Note      : 备注
+# SYS_About_Author    : 作者 
+# SYS_About_Project   : 项目地址
+# SYS_Author_Sha1     : Author Sha1 			 									 	  
+# ================================================== 
+function Infos_About(){
+	# 加载
+	if [ "${SYS_Lang}" == "cn" ];then
+		if [ -e "${SYS_LangDir}About/About.cn" ];then
+			# 文件存在则加载
+			source "${SYS_LangDir}About/About.cn"
+		else
+			SYS_About_Note="本地主机Docker管理工具"
+			SYS_About_Author="KumaNNN"
+			SYS_About_Project="https://github.com/KumaNNNProject/DM_ShellTool"
+		fi		
+	else
+		if [ -e "${SYS_LangDir}About/About.en" ];then
+			# 文件存在则加载
+			source "${SYS_LangDir}About/About.en"
+		else
+			SYS_About_Note="Local host docker management tool"
+			SYS_About_Author="KumaNNN"
+			SYS_About_Project="https://github.com/KumaNNNProject/DM_ShellTool"
+		fi
+	fi
+	
+	SYS_Author_Sha1="36feab703e6789975387e14ddb166a1e2304b547"	
+	# 校验 
+	if [ "`echo -n "${SYS_About_Author}" | sha1sum | cut -d ' ' -f 1 | sed 's/^[ \t]*//g' | sed 's/[ \t]*$//g'`" != "${SYS_Author_Sha1}" ];then
+		if [ "${SYS_Lang}" == "cn" ];then
+			SYS_About_Note="本地主机Docker管理工具"
+			SYS_About_Author="KumaNNN"
+			SYS_About_Project="https://github.com/KumaNNNProject/DM_ShellTool"
+		else
+			SYS_About_Note="Local host docker management tool"
+			SYS_About_Author="KumaNNN"
+			SYS_About_Project="https://github.com/KumaNNNProject/DM_ShellTool"
+		fi
+	fi	
+}
+##### 函数测试 #####
+#Infos_About
+
+# ----函数定义------------------------------------------------------------------------------------------#
+
+# ----函数调用------------------------------------------------------------------------------------------#
+# ${1,,} : 将字符串转换为小写
+# 输出帮助文档
+[ "${1,,}" == '--help' ] &&  outhelp
+
+
+# ----函数调用------------------------------------------------------------------------------------------#
+
+
+
+
+
+
+

@@ -1,0 +1,2451 @@
+#!/bin/bash
+
+##########################################################
+#[FunList]
+# [简述]
+# 
+# 执行环境：宿主机
+# 调用方式：./  source  sh 
+# 调用参数：			 		 	  				  
+#     	   [$1]:   --help 查看帮助文档		      	  
+#
+# 备注：静态函数列表，使用source包含在文件头部
+##########################################################
+# 备注
+# exit 1  : 报错退出
+# exit 0  : 无错误退出
+# return int  : 函数内部，只能返回整数(0-255)
+#               推荐使用return来中止后续执行
+##########################################################
+
+# ----预处理--------------------------------------------#
+
+# 加载模式(1:主动|0:被动<默认>)
+Sys_LoadMode="${Sys_LoadMode:-0}"
+# 调试开关
+Sys_Debug="${Sys_Debug:-0}"
+App_Debug="${App_Debug:-0}"
+# 默认分隔符
+oldIFS=$IFS
+# 测试:开关(true|false)
+App_testON=false
+# 测试:文件名和目录名
+App_testFileName=.env
+App_testDirName=lib
+# 测试:多条件关系(and|or)
+App_testMult=and
+# 是否跳转到当前脚本目录(1:是|0:否)
+App_toScriptDir="0"
+
+# ================================================== 
+# 函数名称: MAP_SET_FileList
+# 函数功能: 映射表:文件列表	 
+# 函数参数:  
+#     	 [$1]:   文件路径(${BASH_SOURCE[0]}<默认>)
+#     	         ./funlist/a/bc.sh 
+#     	          /funlist/a/bc.sh 
+#
+# 变量列表:
+#               ${MAP_Index} : MAP全局索引
+#               ${MAP_ID[0]} : ID(md5sum(文件路径))
+#      ${MAPSET_FileList[0]} : 文件列表(数组)
+#
+# 返回值:  
+# 		$?: 获取调用结果(调用后立即使用)
+# 		    0: 执行成功 
+# 		    1: 执行失败 
+# 
+# ================================================== 
+function MAP_SET_FileList(){
+	# ${BASH_SOURCE[0]}: ./funlist/a/bc.sh
+	#                      funlist/a/bc.sh
+	# dirname ${BASH_SOURCE[0]}: ./funlist/a
+	#                              funlist/a
+	# 删除行首空格: sed 's/^[ \t]*//g'
+	# 删除行尾空格: sed 's/[ \t]*$//g'	
+	
+	# ./funlist/a/bc.sh  =>  funlist/a/bc.sh
+	#  /funlist/a/bc.sh
+	# 文件
+	local File="${1:-${BASH_SOURCE[0]}}"
+	[ "${File:0:1}" == "." ]  &&  File="`echo "${File}" | sed 's/^\.//g' | sed 's/^\///g'`"
+	# ID(md5sum(文件路径))
+	local TMP_ID="`echo -n "${File}" | md5sum | cut -d ' ' -f 1`"
+		
+	# 存在记录时，使用已存记录的索引	
+	for key in ${!MAP_ID[@]}
+	do
+		if [ "${TMP_ID}" == "${MAP_ID[$key]}" ];then
+			#echo "ID hit..."
+			local MAP_NextIndex="${MAP_Index}"
+			MAP_Index="${key}"
+		fi
+	done
+	
+	# MAP全局索引
+	MAP_Index="${MAP_Index:-0}"
+	# ID(md5sum(文件路径))
+	MAP_ID[${MAP_Index}]="${TMP_ID}"
+	# 文件列表
+	MAPSET_FileList[${MAP_Index}]="${File}"
+	let MAP_Index++	
+	# 恢复索引
+	[ "${MAP_NextIndex}" != "" ] &&  MAP_Index="${MAP_NextIndex}"
+}
+##### 函数测试 #####
+# MAP_SET_FileList
+# 执行时间: 00:08
+# MAP_SET_FileList  "/funlist/a/bc1.sh"
+# 执行时间: 00:04
+# MAP_SET_FileList  "/funlist/a/bc2.sh"
+# MAP_SET_FileList  "/funlist/a/bc3.sh"
+# MAP_SET_FileList  "/funlist/a/bc4.sh"
+# MAP_SET_FileList  "/funlist/a/bc5.sh"
+# MAP_SET_FileList  "/funlist/a/bc6.sh"
+# MAP_SET_FileList  "/funlist/a/bc7.sh"
+# MAP_SET_FileList  "/funlist/a/bc8.sh"
+# MAP_SET_FileList  "/funlist/a/bc9.sh"
+# MAP_SET_FileList  "/funlist/a/bc10.sh"
+# MAP_SET_FileList
+# 执行时间: 00:43 
+
+# ================================================== 
+# 函数名称: FUN_Source
+# 函数功能: 文件加载
+# 函数参数:  
+#     	 [$1]:   文件路径 
+# 
+# ================================================== 
+function FUN_Source(){
+	#需要加载的文件
+	local SourceFile="${1:-}"
+	
+	#设置 映射表.文件列表
+	[ -e "${SourceFile}" ] &&  MAP_SET_FileList "${SourceFile}"
+	#加载文件
+	if [ "${SourceFile}" != "" ];then
+		# 加载模式(1:主动|0:被动<默认>)
+		Sys_LoadMode="1"
+		if [ -e "${SourceFile}" ];then 
+			echo "[FUN_Source] ${SourceFile}"
+			source "${SourceFile}"  
+		else 
+			echo "[FUN_Source:File not exist] ${SourceFile}"
+		fi
+	fi
+}
+##### 函数测试 #####
+# FUN_Source  "/funlist/a/bc1.sh"
+# FUN_Source  "/funlist/a/bc2.sh"
+# FUN_Source  "/funlist/a/bc3.sh"
+# FUN_Source  "/funlist/a/bc4.sh"
+# FUN_Source  "/funlist/a/bc5.sh"
+# FUN_Source  "/funlist/a/bc6.sh"
+# FUN_Source  "/funlist/a/bc7.sh"
+# FUN_Source  "/funlist/a/bc8.sh"
+# FUN_Source  "/funlist/a/bc9.sh"
+# FUN_Source  "/funlist/a/bc10.sh"
+
+# ================================================== 
+# 函数名称: MAP_SET 
+# 函数功能: 映射表:设置 
+# 函数参数: 
+#     	 [$1]:   更多数据(1:是|0:否<默认>) 
+#
+# 变量列表:
+#         ${MAP_FileName[0]} : 文件名称(bc.sh)
+#     ${MAP_AbsolutePath[0]} : 绝对路径(/mnt/.../funlist/a)
+#     ${MAP_RelativePath[0]} : 相对路径(funlist/a)
+#          ${MAP_FunList[0]} : 函数列表(,号分隔)
+#      ${MAP_FunList_Raw[0]} : 函数列表(原生,包含换行符)
+#     ${MAP_FunList_Array_0} : 函数列表(数组)
+#                              #eval echo "\${MAP_FunList_Array_${MAP_Index}[0]}"  
+# 返回值: 
+# 		$?: 获取调用结果(调用后立即使用) 
+# 		    0: 执行成功 
+# 		    1: 执行失败 
+# 
+# ================================================== 
+function MAP_SET(){ 
+	#更多数据(1:是|0:否<默认>)
+	local isMore="${1:-0}"
+	
+	# 设置数据	
+	for key in ${!MAPSET_FileList[@]}
+	do
+		# 文件名称(bc.sh)
+		[ "${MAP_FileName[${key}]}" == "" ] && MAP_FileName[${key}]="${MAPSET_FileList[$key]##*/}"
+		# 绝对路径(/mnt/.../funlist/a)
+		[ "${MAP_AbsolutePath[${key}]}" == "" ] && MAP_AbsolutePath[${key}]="$(cd $(dirname ${MAPSET_FileList[$key]}); pwd)"
+		# 相对路径(funlist/a) 
+		[ "${MAP_RelativePath[${key}]}" == "" ] && MAP_RelativePath[${key}]="`dirname ${MAPSET_FileList[$key]}`"
+		if [ "${isMore}" == "1" ]; then
+			# 函数列表(原生,包含换行符)
+			MAP_FunList_Raw[${key}]="`cat ${MAPSET_FileList[$key]} | grep "^function.*" | sed 's/function//g' | sed 's/()//g' | sed 's/{//g' | sed 's/^[ \t]*//g' | sed 's/[ \t]*$//g'`"
+			# 函数列表(数组)
+			eval MAP_FunList_Array_${key}=\(`echo "${MAP_FunList_Raw[${key}]}"`\)
+			# 函数列表(,号分隔)	
+			for i in `eval echo '${MAP_FunList_Array_'"${key}"'[@]}'`
+			do
+				[ "${FunList}" != "" ] &&  FunList="${FunList},${i}" || FunList="${i}"
+			done
+			MAP_FunList[${key}]="${FunList}"
+			unset FunList
+		else 
+			# 函数列表(原生,包含换行符)
+			MAP_FunList_Raw[${key}]=""
+			# 函数列表(数组)
+			eval MAP_FunList_Array_${key}=""
+			# 函数列表(,号分隔)
+			MAP_FunList[${key}]=""
+		fi
+		
+	done
+
+	# 清除变量
+	unset FunList	
+}
+##### 函数测试 #####
+# FUN_Source
+# FUN_Source  "tmp/a/ta.sh"
+# FUN_Source  "tmp/b/tb.sh"
+# MAP_SET 
+#
+# echo "ID: ${MAP_ID[0]}"
+# echo "FileName: ${MAP_FileName[0]}"
+# echo "AbsolutePath: ${MAP_AbsolutePath[0]}"
+# echo "MAP_RelativePath: ${MAP_RelativePath[0]}"
+# echo "MAP_FunList: ${MAP_FunList[0]}"
+# echo 
+# echo "ID: ${MAP_ID[1]}"
+# echo "FileName: ${MAP_FileName[1]}"
+# echo "AbsolutePath: ${MAP_AbsolutePath[1]}"
+# echo "MAP_RelativePath: ${MAP_RelativePath[1]}"
+# echo "MAP_FunList: ${MAP_FunList[1]}"
+# echo 
+# echo "ID: ${MAP_ID[2]}"
+# echo "FileName: ${MAP_FileName[2]}"
+# echo "AbsolutePath: ${MAP_AbsolutePath[2]}"
+# echo "MAP_RelativePath: ${MAP_RelativePath[2]}"
+# echo "MAP_FunList: ${MAP_FunList[2]}"
+
+# ================================================== 
+# 函数名称: MAP_GET					  	 
+# 函数功能: 映射表:获取	 
+# 函数参数: 			 		 	  				 
+#     	 $1: 查询字段
+#     	 $2: 条件字段01(key)
+#     	 $3: 条件内容01(value)
+#      [$4]: 条件字段02(key)(and)     		      	 
+#      [$5]: 条件内容02(value)
+#  
+# 可用查询字段:
+#               MAP_ID : ID
+#         MAP_FileName : 文件名称
+#     MAP_AbsolutePath : 绝对路径(/mnt/.../funlist/a)
+#     MAP_RelativePath : 相对路径(funlist/a)
+#          MAP_FunList : 函数列表(,号分隔)
+#      MAP_FunList_Raw : 函数列表(原生,包含换行符)
+#
+# 可用条件字段:
+#         MAP_FileName : 文件名称
+#     MAP_AbsolutePath : 绝对路径(/mnt/.../funlist/a)
+#     MAP_RelativePath : 相对路径(funlist/a)
+#          MAP_FunList : 函数名称
+#
+# 返回值:  									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 		  		 	  
+# 	                       Str : 结果(取值为最后一个匹配的结果) 
+# 	                 ${Result} : 结果(取值为最后一个匹配的结果) 
+# 	       ${MAP_Result_Index} : 结果 索引
+# 	          ${MAP_Result_ID} : 结果 ID
+# 	    ${MAP_Result_FileName} : 结果 文件名称
+# 	${MAP_Result_AbsolutePath} : 结果 绝对路径
+# 	${MAP_Result_RelativePath} : 结果 相对路径
+# 	     ${MAP_Result_FunList} : 结果 函数列表(,号分隔)
+# 	  ${MAP_Result_FunListRaw} : 结果 函数列表(原生,包含换行符)			 									 	  
+# ================================================== 
+function MAP_GET(){
+	#查询字段
+	local QueryField="${1}"
+	#条件字段01
+	local ConditionKey_01="${2}"	
+	#条件内容01
+	local ConditionValue_01="${3}"
+	#条件字段02
+	local ConditionKey_02="${4:-}"	
+	#条件内容02
+	local ConditionValue_02="${5:-}"
+	
+	if [ "${ConditionKey_02}" != "" ];then
+		# 多条件查询
+		for key in ${!MAP_FileName[@]}
+		do
+			local c1="`eval echo "\\${${ConditionKey_01}[${key}]}" | grep -w "${ConditionValue_01}"`"						
+			local c2="`eval echo "\\${${ConditionKey_02}[${key}]}" | grep -w "${ConditionValue_02}"`"						
+			#c1="`echo "${c1}" | grep -w "${ConditionValue_01}"`"		
+			#c2="`echo "${c2}" | grep -w "${ConditionValue_02}"`"		
+			if [ "${c1}" != "" ] && [ "${c2}" != "" ];then
+				eval MAP_Result="\${${QueryField}[${key}]}"
+				MAP_Result_Index="${key}"
+				MAP_Result_ID="${MAP_ID[${key}]}"
+				MAP_Result_FileName="${MAP_FileName[${key}]}"
+				MAP_Result_AbsolutePath="${MAP_AbsolutePath[${key}]}"
+				MAP_Result_RelativePath="${MAP_RelativePath[${key}]}"
+				MAP_Result_FunList="${MAP_FunList[${key}]}"
+				MAP_Result_FunListRaw="${MAP_FunListRaw[${key}]}"
+			fi 
+		done 
+	else
+		# 单条件查询
+		for key in ${!MAP_FileName[@]}
+		do			
+			local c1="`eval echo "\\${${ConditionKey_01}[${key}]}" | grep -w "${ConditionValue_01}"`"			
+			#c1="`echo "${c1}" | grep -w "${ConditionValue_01}"`"		
+			if [ "${c1}" != "" ];then
+				eval MAP_Result="\${${QueryField}[${key}]}"
+				MAP_Result_Index="${key}"
+				MAP_Result_ID="${MAP_ID[${key}]}"
+				MAP_Result_FileName="${MAP_FileName[${key}]}"
+				MAP_Result_AbsolutePath="${MAP_AbsolutePath[${key}]}"
+				MAP_Result_RelativePath="${MAP_RelativePath[${key}]}"
+				MAP_Result_FunList="${MAP_FunList[${key}]}"
+				MAP_Result_FunListRaw="${MAP_FunListRaw[${key}]}"
+			fi
+		done
+	fi
+	# 返回结果
+	echo ${MAP_Result}	
+
+	# 清除变量
+	#unset MAP_Result
+}
+##### 函数测试 #####
+# MAP_GET "MAP_RelativePath"  "MAP_FileName" "ta.sh"
+# MAP_GET "MAP_RelativePath" "MAP_FunList" "MAP_SETs" "MAP_FileName" "ta.sh"
+# echo MAP_RelativePath: ${MAP_Result}
+##### 使用示例 ##### 
+#脚本所在目录
+# SPath="`MAP_GET "MAP_AbsolutePath" "MAP_FileName" "ta.sh"`"
+# echo MAP_AbsolutePath: ${SPath}
+
+# ================================================== 
+# 函数名称: testENV 
+# 函数功能: 测试环境是否符合脚本要求 
+# 函数参数: 
+# 
+# 上下文变量: 
+# 		 App_testON : 开关(true|false) 
+#  App_testFileName : 文件名 
+# 	App_testDirName : 目录名 
+# 	   App_testMult : 多条件关系(and|or) 
+# 返回值: 
+# 		         Str : 项目实际路径(/.../funlist 或 /)
+# ${RealProjectPath} : 项目实际路径(/.../funlist 或 /)
+# ================================================== 
+function testENV(){
+	# 原理：检测当前路径下是否有指定的文件或目录
+	#
+	# ${FUNCNAME[0]} : 当前函数名
+	# 获取符合条件的路径( /mnt/f_DockerData )
+	# -d : 判断是否为目录，存在为true
+	# -e : 判断是否为文件，存在为true
+	# 由于！取反，实际结果: 
+	# && :  任一个true，则执行循环体 (or)
+	# || :  都为true，则执行循环体 (and)
+	
+	local ScriptDir="`MAP_GET "MAP_AbsolutePath" "MAP_FunList" "${FUNCNAME[0]}"`"
+	cd ${ScriptDir}
+	if [ "${App_testMult}" == "and" ];then
+		# 条件关系: 和(and)
+		while ( [ ! -d $App_testDirName ] || [ ! -e $App_testFileName ]  )
+		do				
+			# 根目录，退出循环，避免死循环
+			if [ `pwd` == '/' ]; then					
+				break
+			else
+				cd ..					
+			fi
+		done
+		RealProjectPath=`pwd`
+	elif [ "${App_testMult}" == "or" ];then
+		# 条件关系: 或(or)
+		while ( [ ! -d $App_testDirName ] && [ ! -e $App_testFileName ]  )
+		do
+			# 根目录，退出循环，避免死循环
+			if [ `pwd` == '/' ]; then					
+				break
+			else
+				cd ..					
+			fi
+		done
+		RealProjectPath=`pwd`
+	fi		
+	cd ${ScriptDir}
+	echo ${RealProjectPath}
+}
+#testENV
+
+# 使用环境测试
+[ $App_testON == 'true' ] && testENV
+#默认处理: 设置此脚本的相关信息
+[ "${Sys_LoadMode}" == "0" ] &&  FUN_Source
+# FUN_Source  "tmp/a/ta.sh"
+# FUN_Source  "tmp/b/tb.sh"
+#推荐在加载完所有文件后使用
+#MAP_SET 
+
+
+# 脚本名称
+SCRIPT_NAME=${BASH_SOURCE[0]##*/}
+# 脚本所在目录
+# BASH_SOURCE[0]: 存储脚本的名称，如 funlist/a/bc.sh
+# 注: 只适用于bash shell，不会改变cd目录
+#     SCRIPT_DIR=$(cd $(dirname $0); pwd)  #不准确# $0不同方式调用结果不同
+## OK # ./XXX.sh 	  :  /mnt/f_DockerData/scripts
+## OK # source XXX.sh :  /mnt/f_DockerData/scripts
+## OK # bash XXX.sh	  :  /mnt/f_DockerData/scripts
+## NO # sh XXX.sh	  :  Error
+#SCRIPT_DIR=$(cd $(dirname ${BASH_SOURCE[0]}); pwd) #改用如下方式# 
+#SCRIPT_DIR="`MAP_GET "MAP_AbsolutePath" "MAP_FileName" "${SCRIPT_NAME}"`"
+# 跳转到脚本目录
+[ "${App_toScriptDir}" == "1" ] && cd ${SCRIPT_DIR}
+
+# Debug
+[ "${Sys_Debug}" == 1 ] && echo RealProjectPath: $RealProjectPath
+[ "${Sys_Debug}" == 1 ] && echo PWD: $(pwd)
+
+# ----预处理--------------------------------------------#
+
+
+# ----参数处理------------------------------------------------------------------------------------------#
+
+# ----参数处理------------------------------------------------------------------------------------------#
+
+
+# ----函数定义------------------------------------------------------------------------------------------#
+
+# ================================================== 
+# 函数名称：outhelp		 					  	 
+# 函数功能：帮助文档	  	  							 
+# 函数参数：			 		 	  				 
+# 			 									 	 
+# 返回值： 									 	  
+# 		 Document	 									 	  
+# ================================================== 
+function outhelp()
+{			
+	echo
+	echo "xxxxxxxx"
+	echo
+	echo "先引用该文件，再调用相关函数"
+	echo "source ${SCRIPT_NAME}"
+	echo
+	echo "FunctionName  arg1  arg2  ... "
+	echo "       参数列表："
+	echo "         arg1：xxxxxx。必需"
+	echo "         arg2：xxxxx。可选"
+	echo  	 
+	echo "示例："
+	echo "FunctionName  8.0"  
+		
+	return 0 2>/dev/nul
+	exit 0
+}
+
+
+# printf "\033[1;37;46m%-8s %-15s %-33s %-22s %-12s %-33s\033[0m\n"  "序号"  "ID"   "仓库"   "标签"   "大小"  "创建时间"  #蓝底白字
+# printf "\033[1;37m%-8s %-15s %-33s %-22s %-12s %-33s\033[0m\n"  "序号"  "ID"   "仓库"   "标签"   "大小"  "创建时间" #白字
+# printf "%-6s %-15s %-31s %-20s %-10s %-30s\n"  "[1234]"  "5c0865e6f546"   "erikdubbelboer/phpredisadmin"   "PS-181.5087.24"   "98.2MB"  "2019-12-11 19:12:18 +0000 UTC"
+
+# ================================================== 
+# 函数名称：Show_Images_Full		 					  	 
+# 函数功能：显示镜像列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Images_Full(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"	
+		
+	echo 
+	echo -e "\033[5;31;43m${LANG_Show_Images_01:-所有镜像}:\033[0m"  #闪烁:黄底红字
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-8s %-15s %33s %-22s %-12s %-35s\033[0m\n"  "序号"  "ID"   "仓库"   "标签"   "大小"  "创建时间"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-8s %-15s %33s %-22s %-12s %-35s\033[0m\n"  "序号"  "ID"   "仓库"   "标签"   "大小"  "创建时间" #白字
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-6s %-13s %33s %-20s %-10s %-35s\033[0m\n"  "Num"  "ID"   "Repository"   "Tag"   "Size"  "CreatedTime"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-6s %-13s %33s %-20s %-10s %-35s\033[0m\n"  "Num"  "ID"   "Repository"   "Tag"   "Size"  "CreatedTime" #白字
+	fi
+	# 表行
+	index=1	
+	for ID in ${INFO_Images_ID[@]}
+	do
+		printf "%-6s %-15s %31s %-20s %-10s %-30s\n"  "[${index}]"  "${ID}"   "${INFO_Images_Repository[${index}]}"   "${INFO_Images_Tag[${index}]}"   "${INFO_Images_Size[${index}]}"  "${INFO_Images_CreatedAt[${index}]}"   #灰字
+		let index++
+	done
+	Count_Images="$((${index}-1))"
+	echo
+	echo "${LANG_Total:-总数}: ${Count_Images}" 
+	# 清除变量
+	unset ShowStyle 
+	unset index 
+	unset ID 
+}
+##### 函数测试 #####
+# Infos_Images
+# Show_Images_Full 
+# # 根据输入的序号获取变量值
+# a=1
+# echo "${INFO_Images_ID[${a}]}"
+
+# ================================================== 
+# 函数名称：Show_Images_Small		 					  	 
+# 函数功能：显示镜像列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Images_Small(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"	
+	
+	echo		
+	echo -e "\033[5;31;43m${LANG_Show_Images_01:-所有镜像}:\033[0m"  #闪烁:黄底红字	
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-8s %-15s %33s %-22s\033[0m\n"  "序号"  "ID"   "仓库"   "标签"   #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-8s %-15s %33s %-22s\033[0m\n"  "序号"  "ID"   "仓库"   "标签"      #白字
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-6s %-13s %33s %-20s\033[0m\n"  "Num"  "ID"   "Repository"   "Tag"     #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-6s %-13s %33s %-20s\033[0m\n"  "Num"  "ID"   "Repository"   "Tag"    #白字
+	fi
+	
+	# 表行
+	index=1	
+	for ID in ${INFO_Images_ID[@]}
+	do
+		printf "%-6s %-15s %31s %-20s\n"  "[${index}]"  "${ID}"   "${INFO_Images_Repository[${index}]}"   "${INFO_Images_Tag[${index}]}" #灰字
+		let index++
+	done
+	Count_Images="$((${index}-1))"
+	echo
+	echo "${LANG_Total:-总数}: ${Count_Images}" 
+	# 清除变量
+	unset ShowStyle 
+	unset index 
+	unset ID 
+}
+##### 函数测试 #####
+# Infos_Images
+# Show_Images_Small 
+# # 根据输入的序号获取变量值
+# a=1
+# echo "${INFO_Images_ID[${a}]}"
+
+# ================================================== 
+# 函数名称：Show_Images		 					  	 
+# 函数功能：显示镜像列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Images(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"	
+	
+	if [ "${SYS_isSmallScreen}" == "1" ];then
+		# 小屏
+		Show_Images_Small "${ShowStyle}"
+	else
+		# 满屏
+		Show_Images_Full "${ShowStyle}"
+	fi	
+	# 清除变量	
+	unset ShowStyle
+}
+##### 函数测试 #####
+# Infos_Images
+# Show_Images 
+# # 根据输入的序号获取变量值
+# a=1
+# echo "${INFO_Images_ID[${a}]}"
+
+# ================================================== 
+# 函数名称：Show_Image		 					  	 
+# 函数功能：显示镜像							 
+# 函数参数：			 		 	  				 
+#     		 $1:   镜像ID		      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Image(){
+	# 注
+	# bash中，转义,如果一个\不行，可尝试2个\\ 
+	# 如 "`eval echo \\${INFO_Images_${ID}_ID}`"  
+	
+	# 镜像ID
+	ID="$1"
+	[ "${ID}" == "" ] &&  echo 'Show_Image()：镜像ID不能为空'  &&    return 1
+	# 加载文件
+	# if [ "`eval echo \\${INFO_Images_${ID}_ID}`" == "" ];then
+		# source "${TmpDir_Images_Sub}DATA_Images_${ID}.sh"	2>/dev/null
+	# fi
+	# 输出内容
+	echo 
+	if [ "${SYS_Lang}" == "cn" ];then
+		echo -e "\033[5;47;30m${LANG_Image:-镜像}${LANG_Details:-详情}:\033[0m ${ID}"  #闪烁:白底黑字
+		echo
+		eval echo -e "'\033[1;37m  ${LANG_Show_Image_01:-镜像完整ID}:\033[0m'" \${INFO_Images_${ID}_ID}
+		eval echo -e "'\033[1;37m${LANG_Show_Image_02:-镜像创建时间}:\033[0m'" \${INFO_Images_${ID}_Created}
+		eval echo -e "'\033[1;37m  ${LANG_Show_Image_03:-Docker版本}:\033[0m'" \${INFO_Images_${ID}_DockerVersion}
+		eval echo -e "'\033[1;37m    ${LANG_Show_Image_04:-镜像作者}:\033[0m'" \${INFO_Images_${ID}_Author}
+		eval echo -e "'\033[1;37m    ${LANG_Show_Image_05:-镜像架构}:\033[0m'" \${INFO_Images_${ID}_Architecture}
+		eval echo -e "'\033[1;37m${LANG_Show_Image_06:-镜像操作系统}:\033[0m'" \${INFO_Images_${ID}_Os}
+		eval echo -e "'\033[1;37m    ${LANG_Show_Image_07:-镜像大小}:\033[0m'" \${INFO_Images_${ID}_Size}
+		eval echo -e "'\033[1;37m  ${LANG_Show_Image_08:-仓库和标签}:\033[0m'"	
+		#for rt in  `eval echo '${INFO_Images_'${ID}'_RepoTags[@]}'`
+		for rt in  `eval echo \\${INFO_Images_${ID}_RepoTags[@]}`
+		do
+			echo "              ${rt}"	
+		done
+	else
+		echo -e "\033[5;47;30m${LANG_Image:-Image} ${LANG_Details:-Details}:\033[0m ${ID}"  #闪烁:白底黑字
+		echo
+		eval echo -e "'\033[1;37m         ${LANG_Show_Image_01:-Image full ID}:\033[0m'" \${INFO_Images_${ID}_ID}
+		eval echo -e "'\033[1;37m   ${LANG_Show_Image_02:-Image creation time}:\033[0m'" \${INFO_Images_${ID}_Created}
+		eval echo -e "'\033[1;37m        ${LANG_Show_Image_03:-Docker version}:\033[0m'" \${INFO_Images_${ID}_DockerVersion}
+		eval echo -e "'\033[1;37m          ${LANG_Show_Image_04:-Image author}:\033[0m'" \${INFO_Images_${ID}_Author}
+		eval echo -e "'\033[1;37m    ${LANG_Show_Image_05:-Image architecture}:\033[0m'" \${INFO_Images_${ID}_Architecture}
+		eval echo -e "'\033[1;37m${LANG_Show_Image_06:-Image operating system}:\033[0m'" \${INFO_Images_${ID}_Os}
+		eval echo -e "'\033[1;37m            ${LANG_Show_Image_07:-Image size}:\033[0m'" \${INFO_Images_${ID}_Size}
+		eval echo -e "'\033[1;37m    ${LANG_Show_Image_08:-Repository and Tag}:\033[0m'"	
+		#for rt in  `eval echo '${INFO_Images_'${ID}'_RepoTags[@]}'`
+		for rt in  `eval echo \\${INFO_Images_${ID}_RepoTags[@]}`
+		do	
+			echo "                        ${rt}"	
+		done
+	fi
+	# 清除变量
+	unset ID 
+}
+##### 函数测试 #####
+# Infos_Images 1
+# Show_Image 90102e6d83ad
+
+
+# printf "\033[1;37;46m%-8s %-15s %-22s %-47s %-12s %-42s\033[0m\n"  "序号"  "ID"  "名称"  "镜像"   "状态"  "端口"  #蓝底白字
+# printf "\033[1;37m%-8s %-15s %-22s %-47s %-12s %-42s\033[0m\n"  "序号"  "ID"  "名称"  "镜像"   "状态"  "端口" #白字
+#
+# printf "\033[1;37;42m%-6s %-15s %-20s %-45s %-10s %-40s\033[0m\n"  "[1234]"  "72f91ea5b39d"  "php73_test2_test2" "erikdubbelboer/phpredisadmin:PS-181.5087.24"   "Running"  "0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp"  #绿底白字
+# printf "%-6s %-15s %-20s %-45s \033[1;32m%-10s\033[0m %-40s\n"  "[1234]"  "72f91ea5b39d"  "php73_test2_test2" "erikdubbelboer/phpredisadmin:PS-181.5087.24"   "Running"  "0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp"  #绿字
+#
+# printf "\033[1;37;41m%-6s %-15s %-20s %-45s %-10s %-40s\033[0m\n"  "[1234]"  "72f91ea5b39d"  "php73_test2_test2" "erikdubbelboer/phpredisadmin:PS-181.5087.24"   "Stopped"  "0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp"  #红底白字
+# printf "%-6s %-15s %-20s %-45s \033[1;31m%-10s\033[0m %-40s\n"  "[1234]"  "72f91ea5b39d"  "php73_test2_test2" "erikdubbelboer/phpredisadmin:PS-181.5087.24"   "Stopped"  "0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp"  #红字
+#
+# printf "\033[1;37;43m%-6s %-15s %-20s %-45s %-10s %-40s\033[0m\n"  "[1234]"  "72f91ea5b39d"  "php73_test2_test2" "erikdubbelboer/phpredisadmin:PS-181.5087.24"   "Pause"  "0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp"  #黄底白字
+# printf "%-6s %-15s %-20s %-45s \033[1;33m%-10s\033[0m %-40s\n"  "[1234]"  "72f91ea5b39d"  "php73_test2_test2" "erikdubbelboer/phpredisadmin:PS-181.5087.24"   "Pause"  "0.0.0.0:80->80/tcp, 0.0.0.0:443->443/tcp"  #黄字
+
+# ================================================== 
+# 函数名称：Show_Containers_Full		 					  	 
+# 函数功能：显示容器列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Containers_Full(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"	
+	
+	echo 
+	echo -e "\033[5;31;43m${LANG_Show_Containers_01:-所有容器}:\033[0m"  #闪烁:黄底红字	
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-8s %-15s %-22s %-47s %-12s %-44s\033[0m\n"  "序号"  "ID"  "名称"  "镜像"   "状态"  "端口"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-8s %-15s %-22s %-47s %-12s %-44s\033[0m\n"  "序号"  "ID"  "名称"  "镜像"   "状态"  "端口" #白字
+	else		
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-6s %-15s %-20s %-45s %-10s %-42s\033[0m\n"  "Num"  "ID"  "Name"  "Image"   "Status"  "Ports"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-6s %-15s %-20s %-45s %-10s %-42s\033[0m\n"  "Num"  "ID"  "Name"  "Image"   "Status"  "Ports" #白字
+	fi
+	# 表行
+	index=1
+	Count_Containers_Run=0
+	Count_Containers_Pause=0
+	Count_Containers_Stop=0
+	for ID in ${INFO_Containers_ID[@]}
+	do		
+		# 端口处理 0.0.0.0=>Hip
+		Ports=`echo ${INFO_Containers_Ports[${index}]} | sed s/0.0.0.0/Hip/g`
+		# 容器状态(Run|Stop|Pause)
+		if  [ "${INFO_Containers_Status2[${index}]}" == 'Run' ]; then
+			# 运行中
+			[ "${ShowStyle}" == "0" ] && printf "\033[1;37;42m%-6s %-15s %-20s %-45s %-10s %-42s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Containers_Names[${index}]}" "${INFO_Containers_Image[${index}]}"   "Running"  "${Ports}"  #绿底白字
+			[ "${ShowStyle}" == "1" ] && printf "%-6s %-15s %-20s %-45s \033[1;32m%-10s\033[0m %-42s\n"  "[${index}]"  "${ID}"  "${INFO_Containers_Names[${index}]}" "${INFO_Containers_Image[${index}]}"   "Running"  "${Ports}"  #绿字
+			let Count_Containers_Run++	
+		elif  [ "${INFO_Containers_Status2[${index}]}" == 'Pause' ]; then
+			# 已暂停 
+			[ "${ShowStyle}" == "0" ] && printf "\033[1;37;43m%-6s %-15s %-20s %-45s %-10s %-42s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Containers_Names[${index}]}" "${INFO_Containers_Image[${index}]}"   "Pause"  "${Ports}"  #黄底白字
+			[ "${ShowStyle}" == "1" ] && printf "%-6s %-15s %-20s %-45s \033[1;33m%-10s\033[0m %-42s\n"  "[${index}]"  "${ID}"  "${INFO_Containers_Names[${index}]}" "${INFO_Containers_Image[${index}]}"   "Pause"  "${Ports}"  #黄字
+			let Count_Containers_Pause++
+		elif  [ "${INFO_Containers_Status2[${index}]}" == 'Stop' ]; then
+			# 已停止 
+			[ "${ShowStyle}" == "0" ] && printf "\033[1;37;41m%-6s %-15s %-20s %-45s %-10s %-42s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Containers_Names[${index}]}" "${INFO_Containers_Image[${index}]}"   "Stopped"  "${Ports}"  #红底白字
+			[ "${ShowStyle}" == "1" ] && printf "%-6s %-15s %-20s %-45s \033[1;31m%-10s\033[0m %-42s\n"  "[${index}]"  "${ID}"  "${INFO_Containers_Names[${index}]}" "${INFO_Containers_Image[${index}]}"   "Stopped"  "${Ports}"  #红字
+			let Count_Containers_Stop++	
+		fi		
+		let index++
+	done
+	Count_Containers="$((${index}-1))"
+	echo
+	printf "%-20s \033[1;32m%-20s\033[0m \033[1;33m%-20s\033[0m \033[1;31m%-20s\033[0m\n"  "${LANG_Total:-总数}: ${Count_Containers}" "${LANG_Run:-运行}: ${Count_Containers_Run}" "${LANG_Pause:-暂停}: ${Count_Containers_Pause}" "${LANG_Stop:-停止}: ${Count_Containers_Stop}" 
+	# 清除变量
+	unset ShowStyle 
+	unset index 
+	unset ID 
+}
+##### 函数测试 #####
+# Infos_Containers
+# Show_Containers_Full 
+# # 根据输入的序号获取变量值
+# a=1
+# echo "${INFO_Containers_ID[${a}]}"
+
+# ================================================== 
+# 函数名称：Show_Containers_Small		 					  	 
+# 函数功能：显示容器列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Containers_Small(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"	
+	
+	echo 
+	echo -e "\033[5;31;43m${LANG_Show_Containers_01:-所有容器}:\033[0m"  #闪烁:黄底红字	
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-8s %-15s %-22s %-12s\033[0m\n"  "序号"  "ID"  "名称"   "状态" #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-8s %-15s %-22s %-12s\033[0m\n"     "序号"  "ID"  "名称"   "状态" #白字
+	else		
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-6s %-15s %-20s %-10s\033[0m\n"  "Num"  "ID"  "Name"     "Status"    #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-6s %-15s %-20s %-10s\033[0m\n"  "Num"  "ID"  "Name"     "Status"   #白字
+	fi
+	
+	# 表行
+	index=1
+	Count_Containers_Run=0
+	Count_Containers_Pause=0
+	Count_Containers_Stop=0
+	for ID in ${INFO_Containers_ID[@]}
+	do		
+		# 端口处理 0.0.0.0=>Hip
+		Ports=`echo ${INFO_Containers_Ports[${index}]} | sed s/0.0.0.0/Hip/g`
+		# 容器状态(Run|Stop|Pause)
+		if  [ "${INFO_Containers_Status2[${index}]}" == 'Run' ]; then
+			# 运行中
+			[ "${ShowStyle}" == "0" ] && printf "\033[1;37;42m%-6s %-15s %-20s %-10s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Containers_Names[${index}]}"   "Running"    #绿底白字
+			[ "${ShowStyle}" == "1" ] && printf "%-6s %-15s %-20s \033[1;32m%-10s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Containers_Names[${index}]}"  "Running"   #绿字
+			let Count_Containers_Run++	
+		elif  [ "${INFO_Containers_Status2[${index}]}" == 'Pause' ]; then
+			# 已暂停 
+			[ "${ShowStyle}" == "0" ] && printf "\033[1;37;43m%-6s %-15s %-20s %-10s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Containers_Names[${index}]}"   "Pause"    #黄底白字
+			[ "${ShowStyle}" == "1" ] && printf "%-6s %-15s %-20s \033[1;33m%-10s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Containers_Names[${index}]}"   "Pause"    #黄字
+			let Count_Containers_Pause++
+		elif  [ "${INFO_Containers_Status2[${index}]}" == 'Stop' ]; then
+			# 已停止 
+			[ "${ShowStyle}" == "0" ] && printf "\033[1;37;41m%-6s %-15s %-20s %-10s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Containers_Names[${index}]}"   "Stopped"    #红底白字
+			[ "${ShowStyle}" == "1" ] && printf "%-6s %-15s %-20s \033[1;31m%-10s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Containers_Names[${index}]}"    "Stopped"    #红字
+			let Count_Containers_Stop++	
+		fi		
+		let index++
+	done
+	Count_Containers="$((${index}-1))"
+	echo
+	printf "%-20s \033[1;32m%-20s\033[0m \033[1;33m%-20s\033[0m \033[1;31m%-20s\033[0m\n"  "${LANG_Total:-总数}: ${Count_Containers}" "${LANG_Run:-运行}: ${Count_Containers_Run}" "${LANG_Pause:-暂停}: ${Count_Containers_Pause}" "${LANG_Stop:-停止}: ${Count_Containers_Stop}" 
+	# 清除变量
+	unset ShowStyle 
+	unset index 
+	unset ID 
+}
+##### 函数测试 #####
+# Infos_Containers
+# Show_Containers_Small 
+# # 根据输入的序号获取变量值
+# a=1
+# echo "${INFO_Containers_ID[${a}]}"
+
+# ================================================== 
+# 函数名称：Show_Containers		 					  	 
+# 函数功能：显示容器列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Containers(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"	
+	
+	if [ "${SYS_isSmallScreen}" == "1" ];then
+		# 小屏
+		Show_Containers_Small "${ShowStyle}"
+	else
+		# 满屏
+		Show_Containers_Full "${ShowStyle}"
+	fi	
+	# 清除变量	
+	unset ShowStyle
+}
+##### 函数测试 #####
+# Infos_Containers
+# Show_Containers 
+# # 根据输入的序号获取变量值
+# a=1
+# echo "${INFO_Containers_ID[${a}]}"
+
+# ================================================== 
+# 函数名称：Show_Container		 					  	 
+# 函数功能：显示容器							 
+# 函数参数：			 		 	  				 
+#     		 $1:   容器ID		      	 
+#     	   [$2]:   结果列表索引(来自用户输入)	
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Container(){
+	# 注
+	# bash中，转义,如果一个\不行，可尝试2个\\ 
+	# 如 "`eval echo \\${INFO_Containers_${ID}_ID}`"  
+	
+	# 容器ID
+	ID="$1"
+	# 列表索引
+	ListIndex="${2}"
+	[ "${ID}" == "" ] &&  echo 'Show_Container()：容器ID不能为空'  &&    return 1
+	# 加载文件
+	# if [ "`eval echo \\${INFO_Containers_${ID}_ID}`" == "" ];then
+		# source "${TmpDir_Containers_Sub}DATA_Containers_${ID}.sh"	2>/dev/null	
+	# fi
+	# 输出内容
+	echo 
+	if [ "${SYS_Lang}" == "cn" ];then
+		echo -e "\033[5;47;30m${LANG_Container:-容器}${LANG_Details:-详情}:\033[0m ${ID}"  #闪烁:白底黑字
+		echo
+		eval echo -e "'\033[1;37m    ${LANG_Show_Container_01:-容器名称}:\033[0m'" \${INFO_Containers_${ID}_Name}
+		eval echo -e "'\033[1;37m  ${LANG_Show_Container_02:-容器完整ID}:\033[0m'" \${INFO_Containers_${ID}_ID}
+		eval echo -e "'\033[1;37m${LANG_Show_Container_03:-容器创建时间}:\033[0m'" \${INFO_Containers_${ID}_Created}
+		eval echo -e "'\033[1;37m    ${LANG_Show_Container_04:-镜像名称}:\033[0m'" \${INFO_Containers_${ID}_Config_Image}
+		eval echo -e "'\033[1;37m  ${LANG_Show_Container_05:-镜像完整ID}:\033[0m'" \${INFO_Containers_${ID}_Image}
+		echo 
+		# (running|paused|exited)
+		Show_Container_State_Status="`eval echo \\${INFO_Containers_${ID}_State_Status}`"	
+		[ "${Show_Container_State_Status}" == "running" ] &&  echo -e "\033[1;37m    ${LANG_Status:-状态}:\033[0m" "\033[1;32m${Show_Container_State_Status}\033[0m"  #绿字
+		[ "${Show_Container_State_Status}" == "paused" ]  &&  echo -e "\033[1;37m    ${LANG_Status:-状态}:\033[0m" "\033[1;33m${Show_Container_State_Status}\033[0m"  #黄字
+		[ "${Show_Container_State_Status}" == "exited" ]  &&  echo -e "\033[1;37m    ${LANG_Status:-状态}:\033[0m" "\033[1;31m${Show_Container_State_Status}\033[0m"  #红字
+		eval echo -e "'\033[1;37m${LANG_Show_Container_06:-开始时间}:\033[0m'" \${INFO_Containers_${ID}_State_StartedAt}
+		echo
+		eval echo -e "'\033[1;37m    ${LANG_Show_Container_07:-平台}:\033[0m'" \${INFO_Containers_${ID}_Platform}
+		eval echo -e "'\033[1;37m${LANG_Show_Container_08:-重启策略}:\033[0m'" \${INFO_Containers_${ID}_HostConfig_RestartPolicy_Name}
+		eval echo -e "'\033[1;37m${LANG_Show_Container_09:-特权模式}:\033[0m'" \${INFO_Containers_${ID}_HostConfig_Privileged}
+		eval echo -e "'\033[1;37m     TTY:\033[0m'" \${INFO_Containers_${ID}_Config_Tty}
+		eval echo -e "'\033[1;37m  ${LANG_Show_Container_10:-主机名}:\033[0m'" \${INFO_Containers_${ID}_Config_Hostname}
+		eval echo -e "'\033[1;37m    ${LANG_Show_Container_11:-用户}:\033[0m'" \${INFO_Containers_${ID}_Config_User}
+		eval echo -e "'\033[1;37m${LANG_Show_Container_12:-工作目录}:\033[0m'" \${INFO_Containers_${ID}_Config_WorkingDir}
+		eval echo -e "'\033[1;37m    ${LANG_Show_Container_13:-挂载}:\033[0m'"
+			 echo "         (${LANG_Show_Container_14:-源目录:目标目录:模式})"
+		for m in  `eval echo \\${INFO_Containers_${ID}_Mounts_SourceDestinationMode[@]}`
+		do
+			echo "         ${m}"
+		done
+		echo
+		eval echo -e "'\033[1;37m${LANG_Show_Container_19:-网络列表}:\033[0m'" ${INFO_Containers_Networks[${ListIndex}]}
+		eval echo -e "'\033[1;37m    ${LANG_Show_Container_15:-网关}:\033[0m'" \${INFO_Containers_${ID}_NetworkSettings_Gateway}
+		eval echo -e "'\033[1;37m      IP:\033[0m'" \${INFO_Containers_${ID}_NetworkSettings_IPAddress}
+		eval echo -e "'\033[1;37m     MAC:\033[0m'" \${INFO_Containers_${ID}_NetworkSettings_MacAddress}	
+		eval echo -e "'\033[1;37m${LANG_Show_Container_16:-端口绑定}:\033[0m'"
+		printf "         \033[1;37m%-36s %-35s\033[0m\n"  "${LANG_Show_Container_17:-主机IP:主机端口}"  "${LANG_Show_Container_18:-容器端口}"   #白字
+		i=0
+		for cp in  `eval echo \\${INFO_Containers_${ID}_NetworkSettings_Ports_ContainerPort[@]}`
+		do
+			Hip="`eval echo \\${INFO_Containers_${ID}_NetworkSettings_Ports_HostIp[${i}]}`"
+			[ "${Hip}" == "0.0.0.0" ] && Hip="${SYS_HostIp:-Hip}"
+			Hport="`eval echo \\${INFO_Containers_${ID}_NetworkSettings_Ports_HostPort[${i}]}`"
+			printf "         %-30s %-30s\n"  "${Hip}:${Hport}" "${cp}"   #灰字
+			let i++
+		done
+	else
+		echo -e "\033[5;47;30m${LANG_Container:-Container} ${LANG_Details:-Details}:\033[0m ${ID}"  #闪烁:白底黑字
+		echo
+		eval echo -e "'\033[1;37m         ${LANG_Show_Container_01:-Container name}:\033[0m'" \${INFO_Containers_${ID}_Name}
+		eval echo -e "'\033[1;37m      ${LANG_Show_Container_02:-Container full ID}:\033[0m'" \${INFO_Containers_${ID}_ID}
+		eval echo -e "'\033[1;37m${LANG_Show_Container_03:-Container creation time}:\033[0m'" \${INFO_Containers_${ID}_Created}
+		eval echo -e "'\033[1;37m             ${LANG_Show_Container_04:-Image name}:\033[0m'" \${INFO_Containers_${ID}_Config_Image}
+		eval echo -e "'\033[1;37m          ${LANG_Show_Container_05:-Image full ID}:\033[0m'" \${INFO_Containers_${ID}_Image}
+		echo 
+		# (running|paused|exited)
+		Show_Container_State_Status="`eval echo \\${INFO_Containers_${ID}_State_Status}`"	
+		[ "${Show_Container_State_Status}" == "running" ] &&  echo -e "\033[1;37m    ${LANG_Status:-Status}:\033[0m" "\033[1;32m${Show_Container_State_Status}\033[0m"  #绿字
+		[ "${Show_Container_State_Status}" == "paused" ]  &&  echo -e "\033[1;37m    ${LANG_Status:-Status}:\033[0m" "\033[1;33m${Show_Container_State_Status}\033[0m"  #黄字
+		[ "${Show_Container_State_Status}" == "exited" ]  &&  echo -e "\033[1;37m    ${LANG_Status:-Status}:\033[0m" "\033[1;31m${Show_Container_State_Status}\033[0m"  #红字
+		eval echo -e "'\033[1;37m${LANG_Show_Container_06:-Start time}:\033[0m'" \${INFO_Containers_${ID}_State_StartedAt}
+		echo
+		eval echo -e "'\033[1;37m         ${LANG_Show_Container_07:-Platform}:\033[0m'" \${INFO_Containers_${ID}_Platform}
+		eval echo -e "'\033[1;37m ${LANG_Show_Container_08:-Restart strategy}:\033[0m'" \${INFO_Containers_${ID}_HostConfig_RestartPolicy_Name}
+		eval echo -e "'\033[1;37m  ${LANG_Show_Container_09:-Privileged mode}:\033[0m'" \${INFO_Containers_${ID}_HostConfig_Privileged}
+		eval echo -e "'\033[1;37m              TTY:\033[0m'" \${INFO_Containers_${ID}_Config_Tty}
+		eval echo -e "'\033[1;37m        ${LANG_Show_Container_10:-Host name}:\033[0m'" \${INFO_Containers_${ID}_Config_Hostname}
+		eval echo -e "'\033[1;37m             ${LANG_Show_Container_11:-User}:\033[0m'" \${INFO_Containers_${ID}_Config_User}
+		eval echo -e "'\033[1;37m${LANG_Show_Container_12:-Working directory}:\033[0m'" \${INFO_Containers_${ID}_Config_WorkingDir}
+		eval echo -e "'\033[1;37m            ${LANG_Show_Container_13:-Mount}:\033[0m'"
+			 echo "                 (${LANG_Show_Container_14:-Source directory:Destination directory:Mode})"
+		for m in  `eval echo \\${INFO_Containers_${ID}_Mounts_SourceDestinationMode[@]}`
+		do
+			echo "                 ${m}"
+		done
+		echo
+		eval echo -e "'\033[1;37m${LANG_Show_Container_19:-Network List}:\033[0m'" ${INFO_Containers_Networks[${ListIndex}]}
+		eval echo -e "'\033[1;37m     ${LANG_Show_Container_15:-Gateway}:\033[0m'" \${INFO_Containers_${ID}_NetworkSettings_Gateway}
+		eval echo -e "'\033[1;37m          IP:\033[0m'" \${INFO_Containers_${ID}_NetworkSettings_IPAddress}
+		eval echo -e "'\033[1;37m         MAC:\033[0m'" \${INFO_Containers_${ID}_NetworkSettings_MacAddress}	
+		eval echo -e "'\033[1;37m${LANG_Show_Container_16:-Port binding}:\033[0m'"
+		printf "         \033[1;37m%-30s %-35s\033[0m\n"  "${LANG_Show_Container_17:-Host IP:Host port}"  "${LANG_Show_Container_18:-Container port}"   #白字
+		i=0
+		for cp in  `eval echo \\${INFO_Containers_${ID}_NetworkSettings_Ports_ContainerPort[@]}`
+		do
+			Hip="`eval echo \\${INFO_Containers_${ID}_NetworkSettings_Ports_HostIp[${i}]}`"
+			[ "${Hip}" == "0.0.0.0" ] && Hip="${SYS_HostIp:-Hip}"
+			Hport="`eval echo \\${INFO_Containers_${ID}_NetworkSettings_Ports_HostPort[${i}]}`"
+			printf "         %-30s %-30s\n"  "${Hip}:${Hport}" "${cp}"   #灰字
+			let i++
+		done
+	fi	
+	# 清除变量
+	unset ID 
+	unset Show_Container_State_Status 
+	unset ListIndex 
+	unset i 
+}
+##### 函数测试 #####
+# Infos_Containers 1
+# Show_Container 72f91ea5b39d
+
+
+# printf "\033[1;37;46m%-8s %-15s %-22s %-14s %-14s %-45s\033[0m\n"  "序号"  "ID"  "名称"  "驱动"   "范围"  "创建时间"  #蓝底白字
+# printf "\033[1;37m%-8s %-15s %-22s %-14s %-14s %-45s\033[0m\n"  "序号"  "ID"  "名称"  "驱动"   "范围"  "创建时间"  #白字
+# printf "%-6s %-15s %-20s %-12s %-12s %-41s\n"  "[1234]"  "72f91ea5b39d"  "php73_test2_test2" "bridge"   "local"  "2019-12-11 19:12:18 +0000 UTC"  #灰字
+
+# ================================================== 
+# 函数名称：Show_Networks_Full		 					  	 
+# 函数功能：显示网络列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Networks_Full(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"	
+	
+	echo 
+	echo -e "\033[5;31;43m${LANG_Show_Networks_01:-所有网络}:\033[0m"  #闪烁:黄底红字	
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-8s %-15s %-22s %-14s %-14s %-45s\033[0m\n"  "序号"  "ID"  "名称"  "驱动"   "范围"  "创建时间"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-8s %-15s %-22s %-14s %-14s %-45s\033[0m\n"  "序号"  "ID"  "名称"  "驱动"   "范围"  "创建时间"  #白字	
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-6s %-15s %-20s %-12s %-12s %-42s\033[0m\n"  "Num"  "ID"  "Name"  "Driver"   "Scope"  "CreatedTime"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-6s %-15s %-20s %-12s %-12s %-42s\033[0m\n"  "Num"  "ID"  "Name"  "Driver"   "Scope"  "CreatedTime"  #白字	
+	fi
+	# 表行
+	index=1	
+	for ID in ${INFO_Networks_ID[@]}
+	do
+		printf "%-6s %-15s %-20s %-12s %-12s %-41s\n"  "[${index}]"  "${ID}"  "${INFO_Networks_Name[${index}]}" "${INFO_Networks_Driver[${index}]}"   "${INFO_Networks_Scope[${index}]}"  "${INFO_Networks_CreatedAt[${index}]}"  #灰字
+		let index++
+	done
+	Count_Networks="$((${index}-1))"
+	echo
+	echo "${LANG_Total:-总数}: ${Count_Networks}" 
+	# 清除变量
+	unset ShowStyle 
+	unset index 
+	unset ID 
+}
+##### 函数测试 #####
+# Infos_Networks
+# Show_Networks_Full 
+# # 根据输入的序号获取变量值
+# a=1
+# echo "${INFO_Networks_ID[${a}]}"
+
+# ================================================== 
+# 函数名称：Show_Networks_Small		 					  	 
+# 函数功能：显示网络列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Networks_Small(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"	
+	
+	echo 
+	echo -e "\033[5;31;43m${LANG_Show_Networks_01:-所有网络}:\033[0m"  #闪烁:黄底红字
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-8s %-15s %-22s %-14s %-14s\033[0m\n"  "序号"  "ID"  "名称"  "驱动"   "范围"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-8s %-15s %-22s %-14s %-14s\033[0m\n"     "序号"  "ID"  "名称"  "驱动"   "范围"  #白字	
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-6s %-15s %-20s %-12s %-12s\033[0m\n"  "Num"  "ID"  "Name"  "Driver"   "Scope"    #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-6s %-15s %-20s %-12s %-12s\033[0m\n"  "Num"  "ID"  "Name"  "Driver"   "Scope"    #白字	
+	fi
+	
+	# 表行
+	index=1	
+	for ID in ${INFO_Networks_ID[@]}
+	do
+		printf "%-6s %-15s %-20s %-12s %-12s\n"  "[${index}]"  "${ID}"  "${INFO_Networks_Name[${index}]}" "${INFO_Networks_Driver[${index}]}"   "${INFO_Networks_Scope[${index}]}"    #灰字
+		let index++
+	done
+	Count_Networks="$((${index}-1))"
+	echo
+	echo "${LANG_Total:-总数}: ${Count_Networks}" 
+	# 清除变量
+	unset ShowStyle 
+	unset index 
+	unset ID 
+}
+##### 函数测试 #####
+# Infos_Networks
+# Show_Networks_Small 
+# # 根据输入的序号获取变量值
+# a=1
+# echo "${INFO_Networks_ID[${a}]}"
+
+# ================================================== 
+# 函数名称：Show_Networks		 					  	 
+# 函数功能：显示网络列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Networks(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"	
+	
+	if [ "${SYS_isSmallScreen}" == "1" ];then
+		# 小屏
+		Show_Networks_Small "${ShowStyle}"
+	else
+		# 满屏
+		Show_Networks_Full "${ShowStyle}"
+	fi	
+	# 清除变量	
+	unset ShowStyle
+}
+##### 函数测试 #####
+# Infos_Networks
+# Show_Networks 
+# # 根据输入的序号获取变量值
+# a=1
+# echo "${INFO_Networks_ID[${a}]}"
+
+# ================================================== 
+# 函数名称：Show_Network		 					  	 
+# 函数功能：显示网络							 
+# 函数参数：			 		 	  				 
+#     		 $1:   网络ID		      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Network(){
+	# 注
+	# bash中，转义,如果一个\不行，可尝试2个\\ 
+	# 如 "`eval echo \\${INFO_Networks_${ID}_ID}`"  
+	
+	# 网络ID
+	ID="$1"
+	[ "${ID}" == "" ] &&  echo 'Show_Network()：网络ID不能为空'  &&    return 1
+	# 加载文件
+	# if [ "`eval echo \\${INFO_Networks_${ID}_ID}`" == "" ];then
+		# source "${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh"	2>/dev/null	
+	# fi
+	# 输出内容
+	echo 
+	if [ "${SYS_Lang}" == "cn" ];then
+		echo -e "\033[5;47;30m${LANG_Network:-网络}${LANG_Details:-详情}:\033[0m ${ID}"  #闪烁:白底黑字
+		echo
+		eval echo -e "'\033[1;37m  ${LANG_Show_Network_01:-网络名称}:\033[0m'" \${INFO_Networks_${ID}_Name}
+		eval echo -e "'\033[1;37m${LANG_Show_Network_02:-网络完整ID}:\033[0m'" \${INFO_Networks_${ID}_ID}
+		eval echo -e "'\033[1;37m  ${LANG_Show_Network_03:-创建时间}:\033[0m'" \${INFO_Networks_${ID}_Created}
+		echo
+		eval echo -e "'\033[1;37m${LANG_Show_Network_04:-网络驱动}:\033[0m'" \${INFO_Networks_${ID}_Driver}
+		eval echo -e "'\033[1;37m${LANG_Show_Network_05:-网络范围}:\033[0m'" \${INFO_Networks_${ID}_Scope}
+		eval echo -e "'\033[1;37m${LANG_Show_Network_06:-启用IPv6}:\033[0m'" \${INFO_Networks_${ID}_EnableIPv6}
+		eval echo -e "'\033[1;37m${LANG_Show_Network_07:-内部网络}:\033[0m'" \${INFO_Networks_${ID}_Internal}
+		eval echo -e "'\033[1;37m${LANG_Show_Network_08:-IPAM驱动}:\033[0m'" \${INFO_Networks_${ID}_IPAM_Driver}
+		eval echo -e "'\033[1;37m${LANG_Show_Network_09:-IPAM子网}:\033[0m'" \${INFO_Networks_${ID}_IPAM_Subnet}
+		eval echo -e "'\033[1;37m${LANG_Show_Network_10:-IPAM网关}:\033[0m'" \${INFO_Networks_${ID}_IPAM_Gateway}
+		eval echo -e "'\033[1;37m${LANG_Show_Network_11:-网络标签}:\033[0m'" 
+		for L in  `eval echo \\${INFO_Networks_${ID}_Labels[@]}`
+		do
+			echo "         ${L}"	
+		done
+		echo
+		echo -e "\033[1;37m${LANG_Show_Network_12:-使用此网络的容器}:\033[0m"
+		printf "\033[1;37m%-27s %-24s %-20s %-60s\033[0m\n"   "${LANG_Show_Network_13:-名称}"  "MAC" "IPv4"   "IPv6"  #白字
+		i=0
+		for cid in  `eval echo \\${INFO_Networks_${ID}_Container_ID[@]}`
+		do
+			printf "%-25s %-24s %-20s %-60s\n"   "`eval echo \\${INFO_Networks_${ID}_Container_Name[${i}]}`"  "`eval echo \\${INFO_Networks_${ID}_Container_MacAddress[${i}]}`" "`eval echo \\${INFO_Networks_${ID}_Container_IPv4Address[${i}]}`"   "`eval echo \\${INFO_Networks_${ID}_Container_IPv6Address[${i}]}`"  #白字
+			let i++	
+		done
+	else
+		echo -e "\033[5;47;30m${LANG_Network:-Network} ${LANG_Details:-Details}:\033[0m ${ID}"  #闪烁:白底黑字
+		echo
+		eval echo -e "'\033[1;37m   ${LANG_Show_Network_01:-Network name}:\033[0m'" \${INFO_Networks_${ID}_Name}
+		eval echo -e "'\033[1;37m${LANG_Show_Network_02:-Network full ID}:\033[0m'" \${INFO_Networks_${ID}_ID}
+		eval echo -e "'\033[1;37m  ${LANG_Show_Network_03:-Creation time}:\033[0m'" \${INFO_Networks_${ID}_Created}
+		echo
+		eval echo -e "'\033[1;37m  ${LANG_Show_Network_04:-Network driver}:\033[0m'" \${INFO_Networks_${ID}_Driver}
+		eval echo -e "'\033[1;37m   ${LANG_Show_Network_05:-Network scope}:\033[0m'" \${INFO_Networks_${ID}_Scope}
+		eval echo -e "'\033[1;37m     ${LANG_Show_Network_06:-Enable IPv6}:\033[0m'" \${INFO_Networks_${ID}_EnableIPv6}
+		eval echo -e "'\033[1;37m${LANG_Show_Network_07:-Internal network}:\033[0m'" \${INFO_Networks_${ID}_Internal}
+		eval echo -e "'\033[1;37m     ${LANG_Show_Network_08:-IPAM driver}:\033[0m'" \${INFO_Networks_${ID}_IPAM_Driver}
+		eval echo -e "'\033[1;37m${LANG_Show_Network_09:-IPAM subnet mask}:\033[0m'" \${INFO_Networks_${ID}_IPAM_Subnet}
+		eval echo -e "'\033[1;37m    ${LANG_Show_Network_10:-IPAM gateway}:\033[0m'" \${INFO_Networks_${ID}_IPAM_Gateway}
+		eval echo -e "'\033[1;37m     ${LANG_Show_Network_11:-Network tag}:\033[0m'" 
+		for L in  `eval echo \\${INFO_Networks_${ID}_Labels[@]}`
+		do
+			echo "                  ${L}"	
+		done
+		echo
+		echo -e "\033[1;37m${LANG_Show_Network_12:-Containers using this network}:\033[0m"
+		printf "\033[1;37m%-25s %-24s %-20s %-60s\033[0m\n"   "${LANG_Show_Network_13:-Name}"  "MAC" "IPv4"   "IPv6"  #白字
+		i=0
+		for cid in  `eval echo \\${INFO_Networks_${ID}_Container_ID[@]}`
+		do
+			printf "%-25s %-24s %-20s %-60s\n"   "`eval echo \\${INFO_Networks_${ID}_Container_Name[${i}]}`"  "`eval echo \\${INFO_Networks_${ID}_Container_MacAddress[${i}]}`" "`eval echo \\${INFO_Networks_${ID}_Container_IPv4Address[${i}]}`"   "`eval echo \\${INFO_Networks_${ID}_Container_IPv6Address[${i}]}`"  #白字
+			let i++	
+		done
+	fi
+	# 清除变量
+	unset ID 
+}
+##### 函数测试 #####
+# Infos_Networks 1
+# Show_Network 79f6f0e6dc97
+
+
+# printf "\033[1;37;46m%-8s %-67s %-10s %-10s %-34s\033[0m\n"  "序号"  "名称"  "驱动"  "孤立"  "创建时间"  #蓝底白字
+# printf "\033[1;37m%-8s %-67s %-10s %-10s %-34s\033[0m\n"  "序号"  "名称"  "驱动"  "孤立"  "创建时间"  #白字
+#
+# printf "\033[1;37;42m%-6s %-65s %-8s %-8s %-30s\033[0m\n"  "[1234]"  "8c170a5fd6a993c65a87a0bf5446127bf95dc96852e1e74f3f6810fb1c2c34ae"  "local"  "false"  "2019-12-11 19:12:18 +0000 UTC"  #绿底白字
+# printf "%-6s %-65s %-8s \033[1;32m%-8s\033[0m %-30s\n"  "[1234]"  "8c170a5fd6a993c65a87a0bf5446127bf95dc96852e1e74f3f6810fb1c2c34ae"  "local"  "false"  "2019-12-11 19:12:18 +0000 UTC"  #绿字
+#
+# printf "\033[1;37;41m%-6s %-65s %-8s %-8s %-30s\033[0m\n"  "[1234]"  "8c170a5fd6a993c65a87a0bf5446127bf95dc96852e1e74f3f6810fb1c2c34ae"  "local"  "true"  "2019-12-11 19:12:18 +0000 UTC"  #红底白字
+# printf "%-6s %-65s %-8s \033[1;31m%-8s\033[0m %-30s\n"  "[1234]"  "8c170a5fd6a993c65a87a0bf5446127bf95dc96852e1e74f3f6810fb1c2c34ae"  "local"  "true"  "2019-12-11 19:12:18 +0000 UTC"  #红字
+
+# ================================================== 
+# 函数名称：Show_Volumes_Full		 					  	 
+# 函数功能：显示卷列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Volumes_Full(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"	
+	
+	echo 
+	echo -e "\033[5;31;43m${LANG_Show_Volumes_01:-所有卷}:\033[0m"  #闪烁:黄底红字	
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-8s %-67s %-10s %-10s %-34s\033[0m\n"  "序号"  "名称"  "驱动"  "孤立"  "创建时间"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-8s %-67s %-10s %-10s %-34s\033[0m\n"  "序号"  "名称"  "驱动"  "孤立"  "创建时间"  #白字
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-6s %-65s %-8s %-8s %-30s\033[0m\n"  "Num"  "Name"  "Driver"  "Isolate"  "CreatedTime"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-6s %-65s %-8s %-8s %-30s\033[0m\n"  "Num"  "Name"  "Driver"  "Isolate"  "CreatedTime"  #白字	
+	fi
+	# 表行
+	index=1
+	Count_Volumes_Use=0
+	Count_Volumes_NoUse=0
+	for ID in ${INFO_Volumes_Name[@]}
+	do			
+		# 时间处理 T=>" " Z=>" "
+		CreatedAt=`echo ${INFO_Volumes_CreatedAt[${index}]} | sed s/T/\ /g | sed s/Z/\ /g`
+		# 是否孤立(true:孤立|false:不孤立)
+		if  [ "${INFO_Volumes_isolate[${index}]}" == 'true' ]; then
+			# 孤立
+			[ "${ShowStyle}" == "0" ] && printf "\033[1;37;41m%-6s %-65s %-8s %-8s %-30s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Volumes_Driver[${index}]}"  "${INFO_Volumes_isolate[${index}]}"  "${CreatedAt}"  #红底白字 
+			[ "${ShowStyle}" == "1" ] && printf "%-6s %-65s %-8s \033[1;31m%-8s\033[0m %-30s\n"  "[${index}]"  "${ID}"  "${INFO_Volumes_Driver[${index}]}"  "${INFO_Volumes_isolate[${index}]}"  "${CreatedAt}"  #红字 
+			let Count_Volumes_NoUse++	
+		elif  [ "${INFO_Volumes_isolate[${index}]}" == 'false' ]; then
+			# 不孤立 
+			[ "${ShowStyle}" == "0" ] && printf "\033[1;37;42m%-6s %-65s %-8s %-8s %-30s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Volumes_Driver[${index}]}"  "${INFO_Volumes_isolate[${index}]}"  "${CreatedAt}"  #绿底白字 
+			[ "${ShowStyle}" == "1" ] && printf "%-6s %-65s %-8s \033[1;32m%-8s\033[0m %-30s\n"  "[${index}]"  "${ID}"  "${INFO_Volumes_Driver[${index}]}"  "${INFO_Volumes_isolate[${index}]}"  "${CreatedAt}"  #绿字 
+			let Count_Volumes_Use++			
+		fi		
+		let index++
+	done
+	Count_Volumes="$((${index}-1))"
+	echo	
+	printf "%-20s \033[1;32m%-20s\033[0m \033[1;31m%-20s\033[0m\n"  "${LANG_Total:-总数}: ${Count_Volumes}" "${LANG_Use:-使用}: ${Count_Volumes_Use}"  "${LANG_Isolated:-孤立}: ${Count_Volumes_NoUse}" 
+	# 清除变量
+	unset ShowStyle 
+	unset index 
+	unset ID 
+}
+##### 函数测试 #####
+# Infos_Volumes
+# Show_Volumes_Full 
+# # 根据输入的序号获取变量值
+# a=1
+# echo "${INFO_Volumes_Name[${a}]}"
+
+# ================================================== 
+# 函数名称：Show_Volumes_Small		 					  	 
+# 函数功能：显示卷列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Volumes_Small(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"	
+	
+	echo 
+	echo -e "\033[5;31;43m${LANG_Show_Volumes_01:-所有卷}:\033[0m"  #闪烁:黄底红字	
+	# 表头(标题)	
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-8s %-67s %-10s %-10s\033[0m\n"  "序号"  "名称"  "驱动"  "孤立"   #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-8s %-67s %-10s %-10s\033[0m\n"     "序号"  "名称"  "驱动"  "孤立"   #白字
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-6s %-65s %-8s %-8s\033[0m\n"  "Num"  "Name"  "Driver"  "Isolate"   #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-6s %-65s %-8s %-8s\033[0m\n"  "Num"  "Name"  "Driver"  "Isolate"    #白字	
+	fi
+	# 表行
+	index=1
+	Count_Volumes_Use=0
+	Count_Volumes_NoUse=0
+	for ID in ${INFO_Volumes_Name[@]}
+	do			
+		# 时间处理 T=>" " Z=>" "
+		CreatedAt=`echo ${INFO_Volumes_CreatedAt[${index}]} | sed s/T/\ /g | sed s/Z/\ /g`
+		# 是否孤立(true:孤立|false:不孤立)
+		if  [ "${INFO_Volumes_isolate[${index}]}" == 'true' ]; then
+			# 孤立
+			[ "${ShowStyle}" == "0" ] && printf "\033[1;37;41m%-6s %-65s %-8s %-8s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Volumes_Driver[${index}]}"  "${INFO_Volumes_isolate[${index}]}"    #红底白字 
+			[ "${ShowStyle}" == "1" ] && printf "%-6s %-65s %-8s \033[1;31m%-8s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Volumes_Driver[${index}]}"  "${INFO_Volumes_isolate[${index}]}"    #红字 
+			let Count_Volumes_NoUse++	
+		elif  [ "${INFO_Volumes_isolate[${index}]}" == 'false' ]; then
+			# 不孤立 
+			[ "${ShowStyle}" == "0" ] && printf "\033[1;37;42m%-6s %-65s %-8s %-8s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Volumes_Driver[${index}]}"  "${INFO_Volumes_isolate[${index}]}"   #绿底白字 
+			[ "${ShowStyle}" == "1" ] && printf "%-6s %-65s %-8s \033[1;32m%-8s\033[0m\n"  "[${index}]"  "${ID}"  "${INFO_Volumes_Driver[${index}]}"  "${INFO_Volumes_isolate[${index}]}"    #绿字 
+			let Count_Volumes_Use++			
+		fi		
+		let index++
+	done
+	Count_Volumes="$((${index}-1))"
+	echo	
+	printf "%-20s \033[1;32m%-20s\033[0m \033[1;31m%-20s\033[0m\n"  "${LANG_Total:-总数}: ${Count_Volumes}" "${LANG_Use:-使用}: ${Count_Volumes_Use}"  "${LANG_Isolated:-孤立}: ${Count_Volumes_NoUse}" 
+	# 清除变量
+	unset ShowStyle 
+	unset index 
+	unset ID 
+}
+##### 函数测试 #####
+# Infos_Volumes
+# Show_Volumes_Small 
+# # 根据输入的序号获取变量值
+# a=1
+# echo "${INFO_Volumes_Name[${a}]}"
+
+# ================================================== 
+# 函数名称：Show_Volumes		 					  	 
+# 函数功能：显示卷列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Volumes(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"	
+	
+	if [ "${SYS_isSmallScreen}" == "1" ];then
+		# 小屏
+		Show_Volumes_Small "${ShowStyle}"
+	else
+		# 满屏
+		Show_Volumes_Full "${ShowStyle}"
+	fi	
+	# 清除变量	
+	unset ShowStyle
+}
+##### 函数测试 #####
+# Infos_Volumes
+# Show_Volumes 
+# # 根据输入的序号获取变量值
+# a=1
+# echo "${INFO_Volumes_Name[${a}]}"
+
+# ================================================== 
+# 函数名称：Show_Volume		 					  	 
+# 函数功能：显示卷							 
+# 函数参数：			 		 	  				 
+#     		 $1:   卷ID(名称)		      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Volume(){
+	# 注
+	# bash中，转义,如果一个\不行，可尝试2个\\ 
+	# 如 "`eval echo \\${INFO_Volumes_${ID}_ID}`"  
+	
+	# 卷ID
+	ID="$1"
+	[ "${ID}" == "" ] &&  echo 'Show_Volume()：卷ID(名称)不能为空'  &&    return 1
+	# 加载文件
+	# if [ "`eval echo \\${INFO_Volumes_${ID}_Name}`" == "" ];then
+		# source "${TmpDir_Volumes_Sub}DATA_Volumes_${ID}.sh"	2>/dev/null
+	# fi
+	# 输出内容
+	echo 
+	if [ "${SYS_Lang}" == "cn" ];then
+		echo -e "\033[5;47;30m${LANG_Volume:-卷}${LANG_Details:-详情}:\033[0m ${ID}"  #闪烁:白底黑字
+		echo
+		eval echo -e "'\033[1;37m  ${LANG_Show_Volume_01:-卷名称}:\033[0m'" \${INFO_Volumes_${ID}_Name}
+		eval echo -e "'\033[1;37m${LANG_Show_Volume_02:-卷挂载点}:\033[0m'" \${INFO_Volumes_${ID}_Mountpoint}
+		eval echo -e "'\033[1;37m${LANG_Show_Volume_03:-创建时间}:\033[0m'" \${INFO_Volumes_${ID}_CreatedAt}
+		eval echo -e "'\033[1;37m  ${LANG_Show_Volume_04:-卷驱动}:\033[0m'" \${INFO_Volumes_${ID}_Driver}
+		eval echo -e "'\033[1;37m  ${LANG_Show_Volume_05:-卷范围}:\033[0m'" \${INFO_Volumes_${ID}_Scope}
+	else
+		echo -e "\033[5;47;30m${LANG_Volume:-Volume} ${LANG_Details:-Details}:\033[0m ${ID}"  #闪烁:白底黑字
+		echo
+		eval echo -e "'\033[1;37m  ${LANG_Show_Volume_01:-Volume name}:\033[0m'" \${INFO_Volumes_${ID}_Name}
+		eval echo -e "'\033[1;37m ${LANG_Show_Volume_02:-Volume mount}:\033[0m'" \${INFO_Volumes_${ID}_Mountpoint}
+		eval echo -e "'\033[1;37m${LANG_Show_Volume_03:-Creation time}:\033[0m'" \${INFO_Volumes_${ID}_CreatedAt}
+		eval echo -e "'\033[1;37m${LANG_Show_Volume_04:-Volume driver}:\033[0m'" \${INFO_Volumes_${ID}_Driver}
+		eval echo -e "'\033[1;37m ${LANG_Show_Volume_05:-Volume scope}:\033[0m'" \${INFO_Volumes_${ID}_Scope}
+	fi
+	# 清除变量
+	unset ID 
+}
+##### 函数测试 #####
+# Infos_Volumes 1
+# Show_Volume 8c170a5fd6a993c65a87a0bf5446127bf95dc96852e1e74f3f6810fb1c2c34ae
+
+
+# printf "\033[1;37;46m%-8s %-69s %-10s %-15s\033[0m\n"  "序号"  "镜像名称"  "官方"  "自动构建" #蓝底白字
+# printf "\033[1;37m%-8s %-69s %-10s %-15s\033[0m\n"     "序号"  "镜像名称"  "官方"  "自动构建" #白字
+#
+# printf "\033[1;37;42m%-6s %-65s %-8s %-11s\033[0m\n"  "[1234]"  "ansibleplaybookbundle/hello-world-db-apb  L"  "true"  "false"  #绿底白字
+# printf "%-6s %-65s \033[1;32m%-8s\033[0m %-11s\n"  "[1234]"  "ansibleplaybookbundle/hello-world-db-apb  L"  "true"  "false"   #绿字
+#
+# printf "\033[1;37;41m%-6s %-65s %-8s %-11s\033[0m\n"  "[1234]"  "ansibleplaybookbundle/hello-world-db-apb  L"  "false"  "true"  #红底白字
+# printf "%-6s %-65s \033[1;31m%-8s\033[0m %-11s\n"  "[1234]"  "ansibleplaybookbundle/hello-world-db-apb  L"  "false"  "true"   #红字
+
+# ================================================== 
+# 函数名称：Show_Searchs		 					  	 
+# 函数功能：显示搜索列表							 
+# 函数参数：			 		 	  				 
+#     		   $1:   主数据索引		      	 
+#     		 [$2]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Searchs(){
+	# 主数据索引
+	SearchsIndex="${1}"
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${2:-0}"	
+	[ "${SearchsIndex}" == "" ] &&  echo 'Show_Searchs()：SearchsIndex不能为空'  &&    return 1
+	# 唯一ID
+	Show_ID="${INFO_Searchs_ID[${SearchsIndex}]}"
+	[ -e "${TmpDir_Searchs_Sub}DATA_Searchs_${Show_ID}.sh" ] && ResultCache=true || ResultCache=false
+	
+	echo 
+	if [ "${SYS_Lang}" == "cn" ];then
+		#白字	
+		eval echo -e "'\033[1;37m  ${LANG_Show_Searchs_01:-唯一ID}:\033[0m '" \${INFO_Searchs_ID[${SearchsIndex}]}
+		eval echo -e "'\033[1;37m  ${LANG_Show_Searchs_02:-关键字}:\033[0m '" \${INFO_Searchs_Keyword[${SearchsIndex}]}
+		eval echo -e "'\033[1;37m${LANG_Show_Searchs_03:-缓存结果}:\033[0m '" ${ResultCache}
+		eval echo -e "'\033[1;37m${LANG_Show_Searchs_04:-查询数量}:\033[0m '" \${INFO_Searchs_limit[${SearchsIndex}]}
+		eval echo -e "'\033[1;37m${LANG_Show_Searchs_05:-查询结果}:\033[0m '"
+	else
+		#白字	
+		eval echo -e "'\033[1;37m     ${LANG_Show_Searchs_01:-Unique ID}:\033[0m '" \${INFO_Searchs_ID[${SearchsIndex}]}
+		eval echo -e "'\033[1;37m       ${LANG_Show_Searchs_02:-Keyword}:\033[0m '" \${INFO_Searchs_Keyword[${SearchsIndex}]}
+		eval echo -e "'\033[1;37m ${LANG_Show_Searchs_03:-Cache results}:\033[0m '" ${ResultCache}
+		eval echo -e "'\033[1;37m${LANG_Show_Searchs_04:-Query quantity}:\033[0m '" \${INFO_Searchs_limit[${SearchsIndex}]}
+		eval echo -e "'\033[1;37m ${LANG_Show_Searchs_05:-Query results}:\033[0m '"
+	fi
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-8s %-69s %-10s %-16s\033[0m\n"  "序号"  "镜像名称"  "官方"  "自动构建" #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-8s %-69s %-10s %-16s\033[0m\n"     "序号"  "镜像名称"  "官方"  "自动构建" #白字
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-6s %-65s %-8s %-12s\033[0m\n"  "Num"  "Image"  "Official"  "AutoBuild" #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-6s %-65s %-8s %-12s\033[0m\n"     "Num"  "Image"  "Official"  "AutoBuild" #白字
+	fi
+	# 表行	
+	index=1	
+	list="`eval echo \\${INFO_Searchs_${Show_ID}_Name[@]}`"
+	for N in ${list}
+	do					
+		# 是否官方版(true:官方|false:非官方)
+		IsOfficial="`eval echo \\${INFO_Searchs_${Show_ID}_IsOfficial[${index}]}`"
+		if  [ "${IsOfficial}" == 'false' ];then
+			# 非官方
+			[ "${ShowStyle}" == "0" ] && printf "\033[1;37;41m%-6s %-65s %-8s %-12s\033[0m\n"  "[${index}]"  "${N}"  "${IsOfficial}"  "`eval echo \\${INFO_Searchs_${Show_ID}_IsAutomated[${index}]}`"  #红底白字 
+			[ "${ShowStyle}" == "1" ] && printf "%-6s %-65s \033[1;31m%-8s\033[0m %-12s\n"  "[${index}]"  "${N}"  "${IsOfficial}"  "`eval echo \\${INFO_Searchs_${Show_ID}_IsAutomated[${index}]}`"  #红字 			
+		elif  [ "${IsOfficial}" == 'true' ];then
+			# 官方
+			[ "${ShowStyle}" == "0" ] && printf "\033[1;37;42m%-6s %-65s %-8s %-12s\033[0m\n"  "[${index}]"  "${N}"  "${IsOfficial}"  "`eval echo \\${INFO_Searchs_${Show_ID}_IsAutomated[${index}]}`"  #绿底白字 
+			[ "${ShowStyle}" == "1" ] && printf "%-6s %-65s \033[1;32m%-8s\033[0m %-12s\n"  "[${index}]"  "${N}"  "${IsOfficial}"  "`eval echo \\${INFO_Searchs_${Show_ID}_IsAutomated[${index}]}`"  #绿字				
+		fi		
+		let index++
+	done	
+	# 清除变量
+	unset ShowStyle 
+	unset index 
+	unset list 
+}
+##### 函数测试 #####
+# Infos_Searchs  "Hello" true  5
+# echo SearchsID: "${SearchsID}"
+# echo SearchsIndex: "${SearchsIndex}"
+# Show_Searchs "${SearchsIndex}"
+# # 根据输入的序号获取变量值
+# a=1
+# `eval echo "\${INFO_Searchs_${Show_ID}_Name[${a}]}"`
+
+# ================================================== 
+# 函数名称：Show_Search		 					  	 
+# 函数功能：显示搜索详情					 
+# 函数参数：			 		 	  				 
+#     		   $1:   唯一ID		      	 
+#     		   $2:   结果列表索引(来自用户输入)		      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Search(){
+	# 唯一ID
+	Show_ID="${1}"
+	[ "${Show_ID}" == "" ] &&  echo 'Show_Search()：Show_ID不能为空'  &&    return 1
+	# 列表索引
+	ListIndex="${2}"	
+	[ "${ListIndex}" == "" ] &&  echo 'Show_Search()：ListIndex不能为空'  &&    return 1
+	# 连接字符串	
+	[ "`eval echo \\${INFO_Searchs_${Show_ID}_IsOfficial[${ListIndex}]}`" == "true" ] && cStr="_" || cStr="r" 
+	
+	if [ "${SYS_Lang}" == "cn" ];then
+		eval echo -e "'\033[1;37m${LANG_Show_Search_01:-镜像名称}:\033[0m '" \${INFO_Searchs_${Show_ID}_Name[${ListIndex}]}
+		eval echo -e "'\033[1;37m    ${LANG_Show_Search_02:-星数}:\033[0m '" \${INFO_Searchs_${Show_ID}_StarCount[${ListIndex}]}
+		eval echo -e "'\033[1;37m    ${LANG_Show_Search_03:-官方}:\033[0m '" \${INFO_Searchs_${Show_ID}_IsOfficial[${ListIndex}]}
+		eval echo -e "'\033[1;37m${LANG_Show_Search_04:-自动构建}:\033[0m '" \${INFO_Searchs_${Show_ID}_IsAutomated[${ListIndex}]}
+		eval echo -e "'\033[1;37m${LANG_Show_Search_05:-镜像描述}:\033[0m '" \${INFO_Searchs_${Show_ID}_Description[${ListIndex}]}
+		eval echo -e "'\033[1;37m     URL:\033[0m '" "https://hub.docker.com/${cStr}/"\${INFO_Searchs_${Show_ID}_Name[${ListIndex}]}
+		eval echo -e "'\033[1;37m${LANG_Show_Search_06:-拉取命令}:\033[0m '" "'\033[1;${SYS_CmdFontColor}mdocker pull '"\${INFO_Searchs_${Show_ID}_Name[${ListIndex}]}  "'\033[0m'"
+	else
+		eval echo -e "'\033[1;37m       ${LANG_Show_Search_01:-Image name}:\033[0m '" \${INFO_Searchs_${Show_ID}_Name[${ListIndex}]}
+		eval echo -e "'\033[1;37m            ${LANG_Show_Search_02:-Stars}:\033[0m '" \${INFO_Searchs_${Show_ID}_StarCount[${ListIndex}]}
+		eval echo -e "'\033[1;37m         ${LANG_Show_Search_03:-Official}:\033[0m '" \${INFO_Searchs_${Show_ID}_IsOfficial[${ListIndex}]}
+		eval echo -e "'\033[1;37m       ${LANG_Show_Search_04:-Auto build}:\033[0m '" \${INFO_Searchs_${Show_ID}_IsAutomated[${ListIndex}]}
+		eval echo -e "'\033[1;37m${LANG_Show_Search_05:-Image description}:\033[0m '" \${INFO_Searchs_${Show_ID}_Description[${ListIndex}]}
+		eval echo -e "'\033[1;37m              URL:\033[0m '" "https://hub.docker.com/${cStr}/"\${INFO_Searchs_${Show_ID}_Name[${ListIndex}]}
+		eval echo -e "'\033[1;37m     ${LANG_Show_Search_06:-Pull command}:\033[0m '" "'\033[1;${SYS_CmdFontColor}mdocker pull '"\${INFO_Searchs_${Show_ID}_Name[${ListIndex}]}  "'\033[0m'"
+	fi
+	# 清除变量
+	unset cStr 	
+}
+##### 函数测试 #####
+# Infos_Searchs  "Hello" true  5
+# Show_Searchs "${SearchsIndex}"
+# Show_Search  "${SearchsID}"  1
+
+
+#------------------------------------------------------------------------------------------
+# [可选字段]
+# CPU:型号名称,架构, CPU核数,总线程数,一级数据缓存,一级指令缓存,二级缓存,三级缓存,是否支持64bit
+# 内存:内存总数,已用内存,空闲内存,可用内存,使用率
+# 硬盘:设备名称,设备类型,设备大小,设备挂载点,文件系统类型,文件系统标签,旋转设备,设备传输类型,设备供应商
+# 存储:设备名称,文件系统类型,大小,已使用,可用,使用率,挂载点
+# 系统:操作系统名称, 操作系统类型,内核版本,主机名,用户数量,用户列表
+# 系统负载:系统启动时间,系统运行时间 ,在线用户数量,最后1分钟,最后5分钟,最后15分钟,正在运行的进程数,进程总数
+# 网络:接口名称,硬件地址,IPv4,IPv6,子网掩码,网卡已开启,网线已连接,路由链 
+# Docker: Docker版本,存储驱动,日志驱动,Cgroup驱动,镜像数量,容器数量,运行中的容器数量,暂停中的容器数量,停止的容器数量,CPU资源,内存资源,Docker根目录,产品协议,注册表镜像
+#------------------------------------------------------------------------------------------
+# [实际使用的字段]
+# 系统:操作系统名称, 操作系统类型,内核版本,主机名,用户数量,用户列表
+# CPU:型号名称,CPU插槽数 ,总核数,总线程数,架构,是否支持64bit
+# 内存:内存总数,已用内存,空闲内存,可用内存,使用率
+# 系统负载:系统启动时间,系统运行时间 ,在线用户数量,最后1分钟,最后5分钟,最后15分钟,正在运行的进程数,进程总数
+#
+# 网络:接口名称,硬件地址,IPv4,IPv6,子网掩码,网卡已开启,网线已连接,路由链
+# 硬盘:设备名称,设备类型,设备大小,文件系统标签,旋转设备(介质类型),设备传输类型,设备挂载点
+# 存储:设备名称,文件系统类型,大小,已使用,可用,使用率,挂载点
+# Docker: Docker版本,存储驱动,日志驱动,Cgroup驱动,镜像数量,容器数量,运行中的容器数量,暂停中的容器数量,停止的容器数量,CPU资源,内存资源,Docker根目录,产品协议,注册表镜像
+#------------------------------------------------------------------------------------------
+
+# ================================================== 
+# 函数名称：Show_Dashboard_Full	 					  	 
+# 函数功能：显示仪表盘				 
+# 函数参数：			 		 	  				 
+#     	 [$1]: 线条颜色(默认:32)   		      	 
+# 			 									 	 
+# 颜色:
+#    30 : 黑色   
+#    31 : 红色   
+#    32 : 绿色   
+#    33 : 黃色   
+#    34 : 蓝色   
+#    35 : 紫红色 
+#    36 : 青蓝色 
+#    37 : 白色    								
+#
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Dashboard_Full(){
+	# 注
+	# bash中，转义,如果一个\不行，可尝试2个\\ 
+	# 如 "`eval echo \\${INFO_Volumes_${ID}_ID}`"  
+	
+	# 线条颜色
+	LineClor="${1:-32}"	
+	# 调用函数
+	DOCKERINFO_FUN_Docker
+	
+	# 输出内容
+	echo 
+	if [ "${SYS_Lang}" == "cn" ];then
+		echo -e "\033[5;47;30m[${LANG_Show_Dashboard_01:-系统}]\033[0m"
+		echo -e "\033[1;37m${LANG_Show_Dashboard_02:-操作系统}: \033[0m"${SYSINFO_VAR_Software_System_OSName}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_03:-系统类型}: \033[0m"${SYSINFO_VAR_Software_System_OSType}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_04:-内核版本}: \033[0m"${SYSINFO_VAR_Software_System_CoreVersion}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_05:-主机名}: \033[0m"${SYSINFO_VAR_Software_System_HostName}
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_06:-用户}: \033[0m"${SYSINFO_VAR_Software_System_Users}'('${SYSINFO_VAR_Software_System_UserList[0]}')'
+	
+		echo
+		echo -e "\033[5;47;30m[CPU]\033[0m"
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_07:-型号}: \033[0m"${SYSINFO_VAR_Hardware_CPU_ModelName}
+		TotalCores="$((${SYSINFO_VAR_Hardware_CPU_Sockets}*${SYSINFO_VAR_Hardware_CPU_CoresPerSocket}))"
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_08:-参数}: \033[0m"${SYSINFO_VAR_Hardware_CPU_Sockets}" ${LANG_Show_Dashboard_09:-插槽}(s), "${TotalCores}" ${LANG_Show_Dashboard_10:-核数}(s), "${SYSINFO_VAR_Hardware_CPU_CPUs}" ${LANG_Show_Dashboard_11:-线程}(s)"
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_12:-主频}: \033[0m"${SYSINFO_VAR_Hardware_CPU_MHz}'MHz'
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_13:-架构}: \033[0m"${SYSINFO_VAR_Hardware_CPU_Architecture}
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_14:-64位}: \033[0m"`[ "${SYSINFO_VAR_Hardware_CPU_is64bit}" == "1" ] && echo 'true' || echo 'false'`
+	
+		echo
+		echo -e "\033[5;47;30m[${LANG_Show_Dashboard_15:-内存}]\033[0m"	
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_16:-总量}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Total}" "1024"  2`' GB'
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_17:-已用}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Used}" "1024"  2`' GB('${SYSINFO_VAR_Software_Memory_UsePercent}')'
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_18:-空闲}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Free}" "1024"  2`' GB'
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_19:-可用}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Available}" "1024"  2`' GB'
+
+		echo
+		echo -e "\033[5;47;30m[${LANG_Show_Dashboard_20:-系统负载}]\033[0m"
+		echo -e "\033[1;37m${LANG_Show_Dashboard_21:-启动时间}: \033[0m"${SYSINFO_VAR_Software_Loadavg_UpTime}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_22:-运行时间}: \033[0m"${SYSINFO_VAR_Software_Loadavg_RunTime[1]}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_23:-在线用户}: \033[0m"${SYSINFO_VAR_Software_Loadavg_OnlineUsers}
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_24:-进程}: \033[0m"${SYSINFO_VAR_Software_Loadavg_ProcessRunning}/${SYSINFO_VAR_Software_Loadavg_ProcessTotal}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_25:-负载率}: \033[0m"${SYSINFO_VAR_Software_Loadavg_1Minutes},${SYSINFO_VAR_Software_Loadavg_5Minutes},${SYSINFO_VAR_Software_Loadavg_15Minutes}
+	else 
+		echo -e "\033[5;47;30m[${LANG_Show_Dashboard_01:-System}]\033[0m"
+		echo -e "\033[1;37m${LANG_Show_Dashboard_02:-Operating system}: \033[0m"${SYSINFO_VAR_Software_System_OSName}
+		echo -e "\033[1;37m         ${LANG_Show_Dashboard_03:-OS type}: \033[0m"${SYSINFO_VAR_Software_System_OSType}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_04:-Kernel version}: \033[0m"${SYSINFO_VAR_Software_System_CoreVersion}
+		echo -e "\033[1;37m       ${LANG_Show_Dashboard_05:-Host name}: \033[0m"${SYSINFO_VAR_Software_System_HostName}
+		echo -e "\033[1;37m            ${LANG_Show_Dashboard_06:-User}: \033[0m"${SYSINFO_VAR_Software_System_Users}'('${SYSINFO_VAR_Software_System_UserList[0]}')'
+	
+		echo
+		echo -e "\033[5;47;30m[CPU]\033[0m"
+		echo -e "\033[1;37m           ${LANG_Show_Dashboard_07:-Model}: \033[0m"${SYSINFO_VAR_Hardware_CPU_ModelName}
+		TotalCores="$((${SYSINFO_VAR_Hardware_CPU_Sockets}*${SYSINFO_VAR_Hardware_CPU_CoresPerSocket}))"
+		echo -e "\033[1;37m       ${LANG_Show_Dashboard_08:-Parameter}: \033[0m"${SYSINFO_VAR_Hardware_CPU_Sockets}" ${LANG_Show_Dashboard_09:-插槽}(s), "${TotalCores}" ${LANG_Show_Dashboard_10:-核数}(s), "${SYSINFO_VAR_Hardware_CPU_CPUs}" ${LANG_Show_Dashboard_11:-线程}(s)"
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_12:-Main frequency}: \033[0m"${SYSINFO_VAR_Hardware_CPU_MHz}'MHz'
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_13:-Architecture}: \033[0m"${SYSINFO_VAR_Hardware_CPU_Architecture}
+		echo -e "\033[1;37m          ${LANG_Show_Dashboard_14:-64 Bit}: \033[0m"`[ "${SYSINFO_VAR_Hardware_CPU_is64bit}" == "1" ] && echo 'true' || echo 'false'`
+	
+		echo
+		echo -e "\033[5;47;30m[${LANG_Show_Dashboard_15:-Memory}]\033[0m"	
+		echo -e "\033[1;37m           ${LANG_Show_Dashboard_16:-Total}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Total}" "1024"  2`' GB'
+		echo -e "\033[1;37m            ${LANG_Show_Dashboard_17:-Used}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Used}" "1024"  2`' GB('${SYSINFO_VAR_Software_Memory_UsePercent}')'
+		echo -e "\033[1;37m            ${LANG_Show_Dashboard_18:-Free}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Free}" "1024"  2`' GB'
+		echo -e "\033[1;37m       ${LANG_Show_Dashboard_19:-Available}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Available}" "1024"  2`' GB'
+
+		echo
+		echo -e "\033[5;47;30m[${LANG_Show_Dashboard_20:-System load}]\033[0m"
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_21:-Startup time}: \033[0m"${SYSINFO_VAR_Software_Loadavg_UpTime}
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_22:-Running time}: \033[0m"${SYSINFO_VAR_Software_Loadavg_RunTime[2]}
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_23:-Online users}: \033[0m"${SYSINFO_VAR_Software_Loadavg_OnlineUsers}
+		echo -e "\033[1;37m         ${LANG_Show_Dashboard_24:-Process}: \033[0m"${SYSINFO_VAR_Software_Loadavg_ProcessRunning}/${SYSINFO_VAR_Software_Loadavg_ProcessTotal}
+		echo -e "\033[1;37m       ${LANG_Show_Dashboard_25:-Load rate}: \033[0m"${SYSINFO_VAR_Software_Loadavg_1Minutes},${SYSINFO_VAR_Software_Loadavg_5Minutes},${SYSINFO_VAR_Software_Loadavg_15Minutes}
+	fi
+	
+	echo
+	echo -e "\033[5;47;30m[${LANG_Show_Dashboard_26:-网络}]\033[0m"
+	# 样式一
+	if [ "${SYS_Lang}" == "cn" ];then
+		printf "\033[1;37m%-26s %-18s %-30s %-20s %-24s %-10s %-10s\n\033[0m" "${LANG_Show_Dashboard_27:-接口名称}"  "IPv4"   "IPv6"   "${LANG_Show_Dashboard_28:-子网掩码}"  "${LANG_Show_Dashboard_29:-硬件地址}"  "${LANG_Show_Dashboard_30:-已开启}"  "${LANG_Show_Dashboard_31:-已连接}"
+	else	
+		printf "\033[1;37m%-22s %-18s %-30s %-16s %-20s %-7s %-10s\n\033[0m" "${LANG_Show_Dashboard_27:-Interface name}"  "IPv4"   "IPv6"   "${LANG_Show_Dashboard_28:-Subnet mask}"  "${LANG_Show_Dashboard_29:-Hardware address}"  "${LANG_Show_Dashboard_30:-Up}"  "${LANG_Show_Dashboard_31:-Connected}"
+	fi
+	dindex=0
+	for a in ${SYSINFO_VAR_Software_Network_InterfaceName[@]}
+	do
+		isUp="`[ "${SYSINFO_VAR_Software_Network_Up[${dindex}]}" == "1" ] && echo -e '\033[1;32mtrue\033[0m' || echo -e '\033[1;31mfalse\033[0m'`"
+		isConnected="`[ "${SYSINFO_VAR_Software_Network_Connected[${dindex}]}" == "1" ] && echo -e '\033[1;32mtrue\033[0m' || echo -e '\033[1;31mfalse\033[0m'`"
+		#printf "%-22s %-17s %-28s %-17s %-20s %-7s %-5s\n"  "br-79f6f0e6dc970e6dc"  "111.111.111.111"  "fe80::42:e2ff:fe19:ff3a/64"  "255.255.255.255"  "02:42:e2:19:ff:3a"  "true" "false"
+		printf "%-22s %-18s %-30s %-16s %-20s %-18s %-18s\n"  "${a}"  "${SYSINFO_VAR_Software_Network_IPv4[${dindex}]}"  "${SYSINFO_VAR_Software_Network_IPv6[${dindex}]}"  "${SYSINFO_VAR_Software_Network_Mask[${dindex}]}"  "${SYSINFO_VAR_Software_Network_Mac[${dindex}]}"  "${isUp}" "${isConnected}"
+		let dindex++
+	done	
+
+	echo
+	echo -e "\033[1;37m${LANG_Show_Dashboard_32:-路由链}:\033[0m"
+	echo -e "\033[1;37m${LANG_Show_Dashboard_33:-接口(本地源IP)<==>网关<==>目标网络或主机(目标掩码)[:标志]}\033[0m"
+	for a in ${SYSINFO_VAR_Software_Network_Route_Links[@]}
+	do
+		echo ${a}
+	done
+
+	echo
+	echo -e "\033[5;47;30m[${LANG_Show_Dashboard_34:-硬盘}]\033[0m"
+	# 样式一
+	if [ "${SYS_Lang}" == "cn" ];then
+		printf "\033[1;37m%-10s %-10s %-12s %-10s %-12s %-22s %-20s\n\033[0m"  "${LANG_Show_Dashboard_35:-名称}"  "${LANG_Show_Dashboard_36:-类型}"  "${LANG_Show_Dashboard_37:-大小}"  "${LANG_Show_Dashboard_38:-介质}"  "${LANG_Show_Dashboard_39:-传输}"  "${LANG_Show_Dashboard_40:-标签}"  "${LANG_Show_Dashboard_41:-挂载点}"  
+	else
+		printf "\033[1;37m%-8s %-8s %-10s %-8s %-10s %-20s %-20s\n\033[0m"  "${LANG_Show_Dashboard_35:-Name}"  "${LANG_Show_Dashboard_36:-Type}"  "${LANG_Show_Dashboard_37:-Size}"  "${LANG_Show_Dashboard_38:-Rotate}"  "${LANG_Show_Dashboard_39:-Transfer}"  "${LANG_Show_Dashboard_40:-Label}"  "${LANG_Show_Dashboard_41:-MountOn}"  
+	fi
+	dindex=0
+	for a in ${SYSINFO_VAR_Hardware_HardDisk_Name[@]}
+	do
+		RotaStr="`[ "${SYSINFO_VAR_Hardware_HardDisk_Rota[${dindex}]}" == "1" ] && echo 'hdd' || echo 'ssd'`"
+		#printf "%-8s %-8s %-10s %-8s %-8s %-20s %-20s\n"  "sda111"  "disk"   "169.9M"   "ssd"    "sata"  "boot2docker-data"  "/mnt/sda1"
+		printf "%-8s %-8s %-10s %-8s %-10s %-20s %-20s\n"  "${a}"  "${SYSINFO_VAR_Hardware_HardDisk_Type[${dindex}]}"   "${SYSINFO_VAR_Hardware_HardDisk_Size[${dindex}]}"   "${RotaStr}"    "${SYSINFO_VAR_Hardware_HardDisk_Tran[${dindex}]}"  "${SYSINFO_VAR_Hardware_HardDisk_Label[${dindex}]}" "${SYSINFO_VAR_Hardware_HardDisk_MountPoint[${dindex}]}"	
+		let dindex++
+	done	
+
+	echo
+	echo -e "\033[5;47;30m[${LANG_Show_Dashboard_42:-存储}]\033[0m"
+	# 样式一
+	if [ "${SYS_Lang}" == "cn" ];then
+		printf "\033[1;37m%-38s %-16s %-17s %-17s %-17s %-20s\n\033[0m"  "${LANG_Show_Dashboard_43:-名称}"  "${LANG_Show_Dashboard_44:-文件系统}"  "${LANG_Show_Dashboard_45:-大小}"  "${LANG_Show_Dashboard_46:-已用}"  "${LANG_Show_Dashboard_47:-可用}"  "${LANG_Show_Dashboard_48:-使用率}"  
+	else
+		printf "\033[1;37m%-36s %-12s %-15s %-15s %-15s %-10s\n\033[0m"  "${LANG_Show_Dashboard_43:-Name}"  "${LANG_Show_Dashboard_44:-FileSystem}"  "${LANG_Show_Dashboard_45:-Size}"  "${LANG_Show_Dashboard_46:-Used}"  "${LANG_Show_Dashboard_47:-Available}"  "${LANG_Show_Dashboard_48:-UsedRate}"  
+	fi
+	dindex=0
+	for a in ${SYSINFO_VAR_Software_Storage_Name[@]}
+	do	
+		Storage_Size="`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Storage_Size[${dindex}]}" "1024"  2`GB"
+		Storage_Used="`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Storage_Used[${dindex}]}" "1024"  2`GB"
+		Storage_Available="`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Storage_Available[${dindex}]}" "1024"  2`GB"
+		#printf "%-36s %-10s %-15s %-15s %-15s %-5s\n"   "/mnt/f_CodeWorkSpacef_CodeWorkSpace" "overlay"  "117224444"   "8410380" "108814064"   "100%"	
+		printf "%-36s %-12s %-15s %-15s %-15s %-5s\n"   "${a}" "${SYSINFO_VAR_Software_Storage_Type[${dindex}]}"  "${Storage_Size}"   "${Storage_Used}" "${Storage_Available}"   "${SYSINFO_VAR_Software_Storage_UsePercent[${dindex}]}"	
+		echo -e "\033[1;37m└${LANG_Show_Dashboard_49:-挂载点}: \033[0m"${SYSINFO_VAR_Software_Storage_MountedOn[${dindex}]}
+		echo 
+		let dindex++
+	done		
+	
+	# 最大长度85(-gt >)
+	[ "${SYS_TerminalColumns}" -gt "${SYS_LineMax}" ] && Dashboard_Columns=85 || Dashboard_Columns="${SYS_TerminalColumns}"
+	RepeatStr "-" "${Dashboard_Columns}" "${LineClor}" "1" 
+	echo -e "\033[5;47;30m[Docker]\033[0m"
+	if [ "${SYS_Lang}" == "cn" ];then
+		echo -e "\033[1;37m      ${LANG_Show_Dashboard_50:-镜像}: \033[0m"${DOCKERINFO_VAR_System_Images}
+		echo -e "\033[1;37m      ${LANG_Show_Dashboard_51:-容器}: \033[0m"${DOCKERINFO_VAR_System_Containers}"(${LANG_Run:-运行}:"${DOCKERINFO_VAR_System_Running}"/${LANG_Pause:-暂停}:"${DOCKERINFO_VAR_System_Paused}"/${LANG_Stop:-停止}:"${DOCKERINFO_VAR_System_Stopped}')'
+		echo -e "\033[1;37m   ${LANG_Show_Dashboard_52:-CPU资源}: \033[0m"${DOCKERINFO_VAR_System_CPUs}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_53:-内存资源}: \033[0m"${DOCKERINFO_VAR_System_TotalMemory}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_54:-Docker版本}: \033[0m"${DOCKERINFO_VAR_System_ServerVersion}
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_55:-根目录}: \033[0m"${DOCKERINFO_VAR_System_DockerRootDir}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_56:-存储驱动}: \033[0m"${DOCKERINFO_VAR_System_StorageDriver}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_57:-日志驱动}: \033[0m"${DOCKERINFO_VAR_System_LoggingDriver}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_58:-Cgroup驱动}: \033[0m"${DOCKERINFO_VAR_System_CgroupDriver}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_59:-产品协议}: \033[0m"${DOCKERINFO_VAR_System_ProductLicense}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_60:-注册表镜像}: \033[0m"
+		for a in ${DOCKERINFO_VAR_System_RegistryMirrors[@]}
+		do
+			echo "            ${a}"
+		done
+	else
+		echo -e "\033[1;37m          ${LANG_Show_Dashboard_50:-Images}: \033[0m"${DOCKERINFO_VAR_System_Images}
+		echo -e "\033[1;37m      ${LANG_Show_Dashboard_51:-Containers}: \033[0m"${DOCKERINFO_VAR_System_Containers}"(${LANG_Run:-Running}:"${DOCKERINFO_VAR_System_Running}"/${LANG_Pause:-Pause}:"${DOCKERINFO_VAR_System_Paused}"/${LANG_Stop:-Stop}:"${DOCKERINFO_VAR_System_Stopped}')'
+		echo -e "\033[1;37m   ${LANG_Show_Dashboard_52:-CPU resources}: \033[0m"${DOCKERINFO_VAR_System_CPUs}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_53:-Memory resources}: \033[0m"${DOCKERINFO_VAR_System_TotalMemory}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_54:-Docker version}: \033[0m"${DOCKERINFO_VAR_System_ServerVersion}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_55:-Root directory}: \033[0m"${DOCKERINFO_VAR_System_DockerRootDir}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_56:-Storage driver}: \033[0m"${DOCKERINFO_VAR_System_StorageDriver}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_57:-Logging driver}: \033[0m"${DOCKERINFO_VAR_System_LoggingDriver}
+		echo -e "\033[1;37m   ${LANG_Show_Dashboard_58:-Cgroup driver}: \033[0m"${DOCKERINFO_VAR_System_CgroupDriver}
+		echo -e "\033[1;37m ${LANG_Show_Dashboard_59:-Product License}: \033[0m"${DOCKERINFO_VAR_System_ProductLicense}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_60:-Registry Mirrors}: \033[0m"
+		for a in ${DOCKERINFO_VAR_System_RegistryMirrors[@]}
+		do
+			echo "                  ${a}"
+		done
+	fi	
+	
+	# 清除变量
+	unset TotalCores 
+	unset dindex 
+	unset LineClor 
+}
+##### 函数测试 #####
+# Show_Dashboard_Full 
+
+# ================================================== 
+# 函数名称：Show_Dashboard_Small	 					  	 
+# 函数功能：显示仪表盘				 
+# 函数参数：			 		 	  				 
+#     	 [$1]: 线条颜色(默认:32)   		      	 
+# 			 									 	 
+# 颜色:
+#    30 : 黑色   
+#    31 : 红色   
+#    32 : 绿色   
+#    33 : 黃色   
+#    34 : 蓝色   
+#    35 : 紫红色 
+#    36 : 青蓝色 
+#    37 : 白色    								
+#
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Dashboard_Small(){
+	# 注
+	# bash中，转义,如果一个\不行，可尝试2个\\ 
+	# 如 "`eval echo \\${INFO_Volumes_${ID}_ID}`"  
+	
+	# 线条颜色
+	LineClor="${1:-32}"	
+	# 调用函数
+	DOCKERINFO_FUN_Docker
+	
+	# 输出内容
+	echo 
+	if [ "${SYS_Lang}" == "cn" ];then
+		echo -e "\033[5;47;30m[${LANG_Show_Dashboard_01:-系统}]\033[0m"
+		echo -e "\033[1;37m${LANG_Show_Dashboard_02:-操作系统}: \033[0m"${SYSINFO_VAR_Software_System_OSName}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_03:-系统类型}: \033[0m"${SYSINFO_VAR_Software_System_OSType}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_04:-内核版本}: \033[0m"${SYSINFO_VAR_Software_System_CoreVersion}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_05:-主机名}: \033[0m"${SYSINFO_VAR_Software_System_HostName}
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_06:-用户}: \033[0m"${SYSINFO_VAR_Software_System_Users}'('${SYSINFO_VAR_Software_System_UserList[0]}')'
+	
+		echo
+		echo -e "\033[5;47;30m[CPU]\033[0m"
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_07:-型号}: \033[0m"${SYSINFO_VAR_Hardware_CPU_ModelName}
+		TotalCores="$((${SYSINFO_VAR_Hardware_CPU_Sockets}*${SYSINFO_VAR_Hardware_CPU_CoresPerSocket}))"
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_08:-参数}: \033[0m"${SYSINFO_VAR_Hardware_CPU_Sockets}" ${LANG_Show_Dashboard_09:-插槽}(s), "${TotalCores}" ${LANG_Show_Dashboard_10:-核数}(s), "${SYSINFO_VAR_Hardware_CPU_CPUs}" ${LANG_Show_Dashboard_11:-线程}(s)"
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_12:-主频}: \033[0m"${SYSINFO_VAR_Hardware_CPU_MHz}'MHz'
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_13:-架构}: \033[0m"${SYSINFO_VAR_Hardware_CPU_Architecture}
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_14:-64位}: \033[0m"`[ "${SYSINFO_VAR_Hardware_CPU_is64bit}" == "1" ] && echo 'true' || echo 'false'`
+	
+		echo
+		echo -e "\033[5;47;30m[${LANG_Show_Dashboard_15:-内存}]\033[0m"	
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_16:-总量}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Total}" "1024"  2`' GB'
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_17:-已用}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Used}" "1024"  2`' GB('${SYSINFO_VAR_Software_Memory_UsePercent}')'
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_18:-空闲}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Free}" "1024"  2`' GB'
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_19:-可用}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Available}" "1024"  2`' GB'
+
+		echo
+		echo -e "\033[5;47;30m[${LANG_Show_Dashboard_20:-系统负载}]\033[0m"
+		echo -e "\033[1;37m${LANG_Show_Dashboard_21:-启动时间}: \033[0m"${SYSINFO_VAR_Software_Loadavg_UpTime}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_22:-运行时间}: \033[0m"${SYSINFO_VAR_Software_Loadavg_RunTime[1]}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_23:-在线用户}: \033[0m"${SYSINFO_VAR_Software_Loadavg_OnlineUsers}
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_24:-进程}: \033[0m"${SYSINFO_VAR_Software_Loadavg_ProcessRunning}/${SYSINFO_VAR_Software_Loadavg_ProcessTotal}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_25:-负载率}: \033[0m"${SYSINFO_VAR_Software_Loadavg_1Minutes},${SYSINFO_VAR_Software_Loadavg_5Minutes},${SYSINFO_VAR_Software_Loadavg_15Minutes}
+	else 
+		echo -e "\033[5;47;30m[${LANG_Show_Dashboard_01:-System}]\033[0m"
+		echo -e "\033[1;37m${LANG_Show_Dashboard_02:-Operating system}: \033[0m"${SYSINFO_VAR_Software_System_OSName}
+		echo -e "\033[1;37m         ${LANG_Show_Dashboard_03:-OS type}: \033[0m"${SYSINFO_VAR_Software_System_OSType}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_04:-Kernel version}: \033[0m"${SYSINFO_VAR_Software_System_CoreVersion}
+		echo -e "\033[1;37m       ${LANG_Show_Dashboard_05:-Host name}: \033[0m"${SYSINFO_VAR_Software_System_HostName}
+		echo -e "\033[1;37m            ${LANG_Show_Dashboard_06:-User}: \033[0m"${SYSINFO_VAR_Software_System_Users}'('${SYSINFO_VAR_Software_System_UserList[0]}')'
+	
+		echo
+		echo -e "\033[5;47;30m[CPU]\033[0m"
+		echo -e "\033[1;37m           ${LANG_Show_Dashboard_07:-Model}: \033[0m"${SYSINFO_VAR_Hardware_CPU_ModelName}
+		TotalCores="$((${SYSINFO_VAR_Hardware_CPU_Sockets}*${SYSINFO_VAR_Hardware_CPU_CoresPerSocket}))"
+		echo -e "\033[1;37m       ${LANG_Show_Dashboard_08:-Parameter}: \033[0m"${SYSINFO_VAR_Hardware_CPU_Sockets}" ${LANG_Show_Dashboard_09:-插槽}(s), "${TotalCores}" ${LANG_Show_Dashboard_10:-核数}(s), "${SYSINFO_VAR_Hardware_CPU_CPUs}" ${LANG_Show_Dashboard_11:-线程}(s)"
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_12:-Main frequency}: \033[0m"${SYSINFO_VAR_Hardware_CPU_MHz}'MHz'
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_13:-Architecture}: \033[0m"${SYSINFO_VAR_Hardware_CPU_Architecture}
+		echo -e "\033[1;37m          ${LANG_Show_Dashboard_14:-64 Bit}: \033[0m"`[ "${SYSINFO_VAR_Hardware_CPU_is64bit}" == "1" ] && echo 'true' || echo 'false'`
+	
+		echo
+		echo -e "\033[5;47;30m[${LANG_Show_Dashboard_15:-Memory}]\033[0m"	
+		echo -e "\033[1;37m           ${LANG_Show_Dashboard_16:-Total}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Total}" "1024"  2`' GB'
+		echo -e "\033[1;37m            ${LANG_Show_Dashboard_17:-Used}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Used}" "1024"  2`' GB('${SYSINFO_VAR_Software_Memory_UsePercent}')'
+		echo -e "\033[1;37m            ${LANG_Show_Dashboard_18:-Free}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Free}" "1024"  2`' GB'
+		echo -e "\033[1;37m       ${LANG_Show_Dashboard_19:-Available}: \033[0m"`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Memory_Available}" "1024"  2`' GB'
+
+		echo
+		echo -e "\033[5;47;30m[${LANG_Show_Dashboard_20:-System load}]\033[0m"
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_21:-Startup time}: \033[0m"${SYSINFO_VAR_Software_Loadavg_UpTime}
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_22:-Running time}: \033[0m"${SYSINFO_VAR_Software_Loadavg_RunTime[2]}
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_23:-Online users}: \033[0m"${SYSINFO_VAR_Software_Loadavg_OnlineUsers}
+		echo -e "\033[1;37m         ${LANG_Show_Dashboard_24:-Process}: \033[0m"${SYSINFO_VAR_Software_Loadavg_ProcessRunning}/${SYSINFO_VAR_Software_Loadavg_ProcessTotal}
+		echo -e "\033[1;37m       ${LANG_Show_Dashboard_25:-Load rate}: \033[0m"${SYSINFO_VAR_Software_Loadavg_1Minutes},${SYSINFO_VAR_Software_Loadavg_5Minutes},${SYSINFO_VAR_Software_Loadavg_15Minutes}
+	fi
+	
+	echo
+	echo -e "\033[5;47;30m[${LANG_Show_Dashboard_26:-网络}]\033[0m"	
+	# 样式二
+	dindex=0
+	for a in ${SYSINFO_VAR_Software_Network_InterfaceName[@]}
+	do
+		isUp="`[ "${SYSINFO_VAR_Software_Network_Up[${dindex}]}" == "1" ] && echo -e '\033[1;32mtrue\033[0m' || echo -e '\033[1;31mfalse\033[0m'`"
+		isConnected="`[ "${SYSINFO_VAR_Software_Network_Connected[${dindex}]}" == "1" ] && echo -e '\033[1;32mtrue\033[0m' || echo -e '\033[1;31mfalse\033[0m'`"
+		echo -e '\033[1;33m'${a}'\033[0m'
+		if [ "${SYS_Lang}" == "cn" ];then
+			echo -e "\033[1;37m    IPv4: \033[0m"${SYSINFO_VAR_Software_Network_IPv4[${dindex}]}
+			echo -e "\033[1;37m    IPv6: \033[0m"${SYSINFO_VAR_Software_Network_IPv6[${dindex}]}
+			echo -e "\033[1;37m${LANG_Show_Dashboard_28:-子网掩码}: \033[0m"${SYSINFO_VAR_Software_Network_Mask[${dindex}]}
+			echo -e "\033[1;37m${LANG_Show_Dashboard_29:-硬件地址}: \033[0m"${SYSINFO_VAR_Software_Network_Mac[${dindex}]}
+			echo -e "\033[1;37m  ${LANG_Show_Dashboard_30:-已开启}: \033[0m"${isUp}
+			echo -e "\033[1;37m  ${LANG_Show_Dashboard_31:-已连接}: \033[0m"${isConnected}
+		else
+			echo -e "\033[1;37m            IPv4: \033[0m"${SYSINFO_VAR_Software_Network_IPv4[${dindex}]}
+			echo -e "\033[1;37m            IPv6: \033[0m"${SYSINFO_VAR_Software_Network_IPv6[${dindex}]}
+			echo -e "\033[1;37m     ${LANG_Show_Dashboard_28:-Subnet mask}: \033[0m"${SYSINFO_VAR_Software_Network_Mask[${dindex}]}
+			echo -e "\033[1;37m${LANG_Show_Dashboard_29:-Hardware address}: \033[0m"${SYSINFO_VAR_Software_Network_Mac[${dindex}]}
+			echo -e "\033[1;37m              ${LANG_Show_Dashboard_30:-Up}: \033[0m"${isUp}
+			echo -e "\033[1;37m       ${LANG_Show_Dashboard_31:-Connected}: \033[0m"${isConnected}
+		fi
+		echo
+		let dindex++
+	done
+
+	echo
+	echo -e "\033[1;37m${LANG_Show_Dashboard_32:-路由链}:\033[0m"
+	echo -e "\033[1;37m${LANG_Show_Dashboard_33:-接口(本地源IP)<==>网关<==>目标网络或主机(目标掩码)[:标志]}\033[0m"
+	for a in ${SYSINFO_VAR_Software_Network_Route_Links[@]}
+	do
+		echo ${a}
+	done
+
+	echo
+	echo -e "\033[5;47;30m[${LANG_Show_Dashboard_34:-硬盘}]\033[0m"
+	# 样式二
+	dindex=0
+	for a in ${SYSINFO_VAR_Hardware_HardDisk_Name[@]}
+	do
+		RotaStr="`[ "${SYSINFO_VAR_Hardware_HardDisk_Rota[${dindex}]}" == "1" ] && echo 'hdd' || echo 'ssd'`"
+		echo -e '\033[1;33m'${a}'\033[0m'
+		if [ "${SYS_Lang}" == "cn" ];then
+			echo -e "\033[1;37m  ${LANG_Show_Dashboard_36:-类型}: \033[0m"${SYSINFO_VAR_Hardware_HardDisk_Type[${dindex}]}
+			echo -e "\033[1;37m  ${LANG_Show_Dashboard_37:-大小}: \033[0m"${SYSINFO_VAR_Hardware_HardDisk_Size[${dindex}]}
+			echo -e "\033[1;37m  ${LANG_Show_Dashboard_38:-介质}: \033[0m"${RotaStr}
+			echo -e "\033[1;37m  ${LANG_Show_Dashboard_39:-传输}: \033[0m"${SYSINFO_VAR_Hardware_HardDisk_Tran[${dindex}]}
+			echo -e "\033[1;37m  ${LANG_Show_Dashboard_40:-标签}: \033[0m"${SYSINFO_VAR_Hardware_HardDisk_Label[${dindex}]}
+			echo -e "\033[1;37m${LANG_Show_Dashboard_41:-挂载点}: \033[0m"${SYSINFO_VAR_Hardware_HardDisk_MountPoint[${dindex}]}
+		else
+			echo -e "\033[1;37m      ${LANG_Show_Dashboard_36:-Type}: \033[0m"${SYSINFO_VAR_Hardware_HardDisk_Type[${dindex}]}
+			echo -e "\033[1;37m      ${LANG_Show_Dashboard_37:-Size}: \033[0m"${SYSINFO_VAR_Hardware_HardDisk_Size[${dindex}]}
+			echo -e "\033[1;37m    ${LANG_Show_Dashboard_38:-Rotate}: \033[0m"${RotaStr}
+			echo -e "\033[1;37m  ${LANG_Show_Dashboard_39:-Transfer}: \033[0m"${SYSINFO_VAR_Hardware_HardDisk_Tran[${dindex}]}
+			echo -e "\033[1;37m     ${LANG_Show_Dashboard_40:-Label}: \033[0m"${SYSINFO_VAR_Hardware_HardDisk_Label[${dindex}]}
+			echo -e "\033[1;37m   ${LANG_Show_Dashboard_41:-MountOn}: \033[0m"${SYSINFO_VAR_Hardware_HardDisk_MountPoint[${dindex}]}
+		fi
+		echo
+		let dindex++
+	done
+
+	echo
+	echo -e "\033[5;47;30m[${LANG_Show_Dashboard_42:-存储}]\033[0m"	
+	# 样式二
+	dindex=0
+	for a in ${SYSINFO_VAR_Software_Storage_Name[@]}
+	do	
+		Storage_Size="`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Storage_Size[${dindex}]}" "1024"  2`GB"
+		Storage_Used="`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Storage_Used[${dindex}]}" "1024"  2`GB"
+		Storage_Available="`ByteConvert "KB2GB" "${SYSINFO_VAR_Software_Storage_Available[${dindex}]}" "1024"  2`GB"	
+		echo -e '\033[1;33m'${a}'\033[0m'
+		if [ "${SYS_Lang}" == "cn" ];then
+			echo -e "\033[1;37m    ${LANG_Show_Dashboard_45:-大小}: \033[0m"${Storage_Size}
+			echo -e "\033[1;37m    ${LANG_Show_Dashboard_46:-已用}: \033[0m"${Storage_Used}
+			echo -e "\033[1;37m    ${LANG_Show_Dashboard_47:-可用}: \033[0m"${Storage_Available}
+			echo -e "\033[1;37m  ${LANG_Show_Dashboard_48:-使用率}: \033[0m"${SYSINFO_VAR_Software_Storage_UsePercent[${dindex}]}
+			echo -e "\033[1;37m${LANG_Show_Dashboard_44:-文件系统}: \033[0m"${SYSINFO_VAR_Software_Storage_Type[${dindex}]}
+			echo -e "\033[1;37m  ${LANG_Show_Dashboard_49:-挂载点}: \033[0m"${SYSINFO_VAR_Software_Storage_MountedOn[${dindex}]}
+		else
+			echo -e "\033[1;37m      ${LANG_Show_Dashboard_45:-Size}: \033[0m"${Storage_Size}
+			echo -e "\033[1;37m      ${LANG_Show_Dashboard_46:-Used}: \033[0m"${Storage_Used}
+			echo -e "\033[1;37m ${LANG_Show_Dashboard_47:-Available}: \033[0m"${Storage_Available}
+			echo -e "\033[1;37m  ${LANG_Show_Dashboard_48:-UsedRate}: \033[0m"${SYSINFO_VAR_Software_Storage_UsePercent[${dindex}]}
+			echo -e "\033[1;37m${LANG_Show_Dashboard_44:-FileSystem}: \033[0m"${SYSINFO_VAR_Software_Storage_Type[${dindex}]}
+			echo -e "\033[1;37m   ${LANG_Show_Dashboard_49:-MountOn}: \033[0m"${SYSINFO_VAR_Software_Storage_MountedOn[${dindex}]}
+		fi
+		echo 
+		let dindex++
+	done		
+	
+	# 最大长度85(-gt >)
+	[ "${SYS_TerminalColumns}" -gt "${SYS_LineMax}" ] && Dashboard_Columns=85 || Dashboard_Columns="${SYS_TerminalColumns}"
+	RepeatStr "-" "${Dashboard_Columns}" "${LineClor}" "1" 
+	echo -e "\033[5;47;30m[Docker]\033[0m"
+	if [ "${SYS_Lang}" == "cn" ];then
+		echo -e "\033[1;37m      ${LANG_Show_Dashboard_50:-镜像}: \033[0m"${DOCKERINFO_VAR_System_Images}
+		echo -e "\033[1;37m      ${LANG_Show_Dashboard_51:-容器}: \033[0m"${DOCKERINFO_VAR_System_Containers}"(${LANG_Run:-运行}:"${DOCKERINFO_VAR_System_Running}"/${LANG_Pause:-暂停}:"${DOCKERINFO_VAR_System_Paused}"/${LANG_Stop:-停止}:"${DOCKERINFO_VAR_System_Stopped}')'
+		echo -e "\033[1;37m   ${LANG_Show_Dashboard_52:-CPU资源}: \033[0m"${DOCKERINFO_VAR_System_CPUs}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_53:-内存资源}: \033[0m"${DOCKERINFO_VAR_System_TotalMemory}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_54:-Docker版本}: \033[0m"${DOCKERINFO_VAR_System_ServerVersion}
+		echo -e "\033[1;37m    ${LANG_Show_Dashboard_55:-根目录}: \033[0m"${DOCKERINFO_VAR_System_DockerRootDir}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_56:-存储驱动}: \033[0m"${DOCKERINFO_VAR_System_StorageDriver}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_57:-日志驱动}: \033[0m"${DOCKERINFO_VAR_System_LoggingDriver}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_58:-Cgroup驱动}: \033[0m"${DOCKERINFO_VAR_System_CgroupDriver}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_59:-产品协议}: \033[0m"${DOCKERINFO_VAR_System_ProductLicense}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_60:-注册表镜像}: \033[0m"
+		for a in ${DOCKERINFO_VAR_System_RegistryMirrors[@]}
+		do
+			echo "            ${a}"
+		done
+	else
+		echo -e "\033[1;37m          ${LANG_Show_Dashboard_50:-Images}: \033[0m"${DOCKERINFO_VAR_System_Images}
+		echo -e "\033[1;37m      ${LANG_Show_Dashboard_51:-Containers}: \033[0m"${DOCKERINFO_VAR_System_Containers}"(${LANG_Run:-Running}:"${DOCKERINFO_VAR_System_Running}"/${LANG_Pause:-Pause}:"${DOCKERINFO_VAR_System_Paused}"/${LANG_Stop:-Stop}:"${DOCKERINFO_VAR_System_Stopped}')'
+		echo -e "\033[1;37m   ${LANG_Show_Dashboard_52:-CPU resources}: \033[0m"${DOCKERINFO_VAR_System_CPUs}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_53:-Memory resources}: \033[0m"${DOCKERINFO_VAR_System_TotalMemory}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_54:-Docker version}: \033[0m"${DOCKERINFO_VAR_System_ServerVersion}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_55:-Root directory}: \033[0m"${DOCKERINFO_VAR_System_DockerRootDir}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_56:-Storage driver}: \033[0m"${DOCKERINFO_VAR_System_StorageDriver}
+		echo -e "\033[1;37m  ${LANG_Show_Dashboard_57:-Logging driver}: \033[0m"${DOCKERINFO_VAR_System_LoggingDriver}
+		echo -e "\033[1;37m   ${LANG_Show_Dashboard_58:-Cgroup driver}: \033[0m"${DOCKERINFO_VAR_System_CgroupDriver}
+		echo -e "\033[1;37m ${LANG_Show_Dashboard_59:-Product License}: \033[0m"${DOCKERINFO_VAR_System_ProductLicense}
+		echo -e "\033[1;37m${LANG_Show_Dashboard_60:-Registry Mirrors}: \033[0m"
+	    for a in ${DOCKERINFO_VAR_System_RegistryMirrors[@]}
+		do
+			echo "                  ${a}"
+		done
+	fi
+	
+	# 清除变量
+	unset TotalCores 
+	unset dindex 
+	unset LineClor 	
+}
+##### 函数测试 #####
+#Show_Dashboard_Small 
+
+# ================================================== 
+# 函数名称：Show_Dashboard 					  	 
+# 函数功能：显示仪表盘				 
+# 函数参数：			 		 	  				 
+#     	 [$1]: 线条颜色(默认:32)   		      	 
+# 			 									 	 
+# 颜色:
+#    30 : 黑色   
+#    31 : 红色   
+#    32 : 绿色   
+#    33 : 黃色   
+#    34 : 蓝色   
+#    35 : 紫红色 
+#    36 : 青蓝色 
+#    37 : 白色    								
+#
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Dashboard(){
+	# 线条颜色
+	LineClor="${1:-32}"	
+	
+	if [ "${SYS_isSmallScreen}" == "1" ];then
+		# 小屏
+		Show_Dashboard_Small "${LineClor}"
+	else
+		# 满屏
+		Show_Dashboard_Full "${LineClor}"
+	fi	
+	# 清除变量	
+	unset LineClor
+}
+##### 函数测试 #####
+#Show_Dashboard
+
+
+# ================================================== 
+# 函数名称：Show_Logs_Full		 					  	 
+# 函数功能：显示日志列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Logs_Full(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"		
+	 
+	echo 	
+	echo -e "\033[5;31;43m${LANG_Show_Logs_01:-容器日志}:\033[0m"  #闪烁:黄底红字 17=>32  15=>30
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-15s %-22s %-12s %-32s %-12s %-57s\033[0m\n"  "ID"  "时间"  "动作"  "目标"  "结果"  "原文"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-15s %-22s %-12s %-32s %-12s %-57s\033[0m\n"  "ID"  "时间"  "动作"  "目标"  "结果"  "原文"  #白字	
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "ID"  "Time"  "Action"  "Target"  "Result"  "OriginalText"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "ID"  "Time"  "Action"  "Target"  "Result"  "OriginalText"  #白字
+	fi
+	# 表记录
+	if [ -e "${TmpDir_Log}Containers/Containers.log" ];then		
+		while read -r Containersline
+		do				
+			# 设置分割符(源数据的预定义是#)	
+			IFS="#"	
+			# 读入到数组
+			arr=($Containersline)				
+			if  [ "${arr[5]}" == 'Fail' ]; then
+				# 失败 15=>30
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;41m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #红底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-15s %-20s %-10s %-30s \033[1;31m%-10s\033[0m %-55s\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #红字 				
+			elif  [ "${arr[5]}" == 'Success' ]; then
+				# 成功  15=>30
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;42m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #绿底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-15s %-20s %-10s %-30s \033[1;32m%-10s\033[0m %-55s\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #绿字					
+			fi		
+		done < ${TmpDir_Log}Containers/Containers.log
+	else
+		echo "${LANG_NoData:-无数据...}"
+	fi
+	echo
+	 
+	echo
+	echo -e "\033[5;31;43m${LANG_Show_Logs_02:-镜像日志}:\033[0m"  #闪烁:黄底红字	
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-15s %-22s %-12s %-32s %-12s %-57s\033[0m\n"  "ID"  "时间"  "动作"  "目标"  "结果"  "原文"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-15s %-22s %-12s %-32s %-12s %-57s\033[0m\n"  "ID"  "时间"  "动作"  "目标"  "结果"  "原文"  #白字	
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "ID"  "Time"  "Action"  "Target"  "Result"  "OriginalText"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "ID"  "Time"  "Action"  "Target"  "Result"  "OriginalText"  #白字
+	fi
+	# 表记录
+	if [ -e "${TmpDir_Log}Images/Images.log" ];then		
+		while read -r Imagesline
+		do				
+			# 设置分割符(源数据的预定义是#)	
+			IFS="#"	
+			# 读入到数组
+			arr=($Imagesline)			
+			if  [ "${arr[5]}" == 'Fail' ]; then
+				# 失败
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;41m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #红底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-15s %-20s %-10s %-30s \033[1;31m%-10s\033[0m %-55s\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #红字 				
+			elif  [ "${arr[5]}" == 'Success' ]; then
+				# 成功 
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;42m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #绿底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-15s %-20s %-10s %-30s \033[1;32m%-10s\033[0m %-55s\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #绿字					
+			fi		
+		done < ${TmpDir_Log}Images/Images.log
+	else
+		echo "${LANG_NoData:-无数据...}"
+	fi
+	echo
+	 
+	echo
+	echo -e "\033[5;31;43m${LANG_Show_Logs_03:-网络日志}:\033[0m"  #闪烁:黄底红字	
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-15s %-22s %-12s %-32s %-12s %-57s\033[0m\n"  "ID"  "时间"  "动作"  "目标"  "结果"  "原文"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-15s %-22s %-12s %-32s %-12s %-57s\033[0m\n"  "ID"  "时间"  "动作"  "目标"  "结果"  "原文"  #白字	
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "ID"  "Time"  "Action"  "Target"  "Result"  "OriginalText"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "ID"  "Time"  "Action"  "Target"  "Result"  "OriginalText"  #白字
+	fi
+	# 表记录
+	if [ -e "${TmpDir_Log}Networks/Networks.log" ];then		
+		while read -r Networksline
+		do				
+			# 设置分割符(源数据的预定义是#)	
+			IFS="#"	
+			# 读入到数组
+			arr=($Networksline)
+			if  [ "${arr[5]}" == 'Fail' ]; then
+				# 失败
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;41m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #红底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-15s %-20s %-10s %-30s \033[1;31m%-10s\033[0m %-55s\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #红字 				
+			elif  [ "${arr[5]}" == 'Success' ]; then
+				# 成功 
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;42m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #绿底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-15s %-20s %-10s %-30s \033[1;32m%-10s\033[0m %-55s\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #绿字					
+			fi		
+		done < ${TmpDir_Log}Networks/Networks.log
+	else
+		echo "${LANG_NoData:-无数据...}"
+	fi
+	echo
+	 
+	echo
+	echo -e "\033[5;31;43m${LANG_Show_Logs_04:-卷日志}:\033[0m"  #闪烁:黄底红字	
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-15s %-22s %-12s %-32s %-12s %-57s\033[0m\n"  "ID"  "时间"  "动作"  "目标"  "结果"  "原文"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-15s %-22s %-12s %-32s %-12s %-57s\033[0m\n"  "ID"  "时间"  "动作"  "目标"  "结果"  "原文"  #白字	
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "ID"  "Time"  "Action"  "Target"  "Result"  "OriginalText"  #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "ID"  "Time"  "Action"  "Target"  "Result"  "OriginalText"  #白字
+	fi
+	# 表记录
+	if [ -e "${TmpDir_Log}Volumes/Volumes.log" ];then		
+		while read -r Volumesline
+		do				
+			# 设置分割符(源数据的预定义是#)	
+			IFS="#"	
+			# 读入到数组
+			arr=($Volumesline)
+			if  [ "${arr[5]}" == 'Fail' ]; then
+				# 失败
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;41m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #红底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-15s %-20s %-10s %-30s \033[1;31m%-10s\033[0m %-55s\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #红字 				
+			elif  [ "${arr[5]}" == 'Success' ]; then
+				# 成功 
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;42m%-15s %-20s %-10s %-30s %-10s %-55s\033[0m\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #绿底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-15s %-20s %-10s %-30s \033[1;32m%-10s\033[0m %-55s\n"  "${arr[0]}"  "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"  "${arr[6]}"  #绿字					
+			fi		
+		done < ${TmpDir_Log}Volumes/Volumes.log
+	else
+		echo "${LANG_NoData:-无数据...}"
+	fi
+	echo	
+	
+	IFS=${oldIFS}
+	# 清除变量
+	unset ShowStyle	
+	unset arr	
+}
+##### 函数测试 #####
+# Show_Logs_Full
+
+# ================================================== 
+# 函数名称：Show_Logs_Small		 					  	 
+# 函数功能：显示日志列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]:   显示风格(0:背景<默认>|1:无背景)			      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Logs_Small(){
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"		
+	 
+	echo
+	echo -e "\033[5;31;43m${LANG_Show_Logs_01:-容器日志}:\033[0m"  #闪烁:黄底红字	
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-22s %-12s %-32s %-12s\033[0m\n"    "时间"  "动作"  "目标"  "结果"   #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-22s %-12s %-32s %-12s\033[0m\n"   "时间"  "动作"  "目标"  "结果"    #白字	
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-20s %-10s %-30s %-10s\033[0m\n"   "Time"  "Action"  "Target"  "Result"    #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-20s %-10s %-30s %-10s\033[0m\n"    "Time"  "Action"  "Target"  "Result"    #白字
+	fi
+	# 表记录
+	if [ -e "${TmpDir_Log}Containers/Containers.log" ];then		
+		while read -r Containersline
+		do				
+			# 设置分割符(源数据的预定义是#)	
+			IFS="#"	
+			# 读入到数组
+			arr=($Containersline)				
+			if  [ "${arr[5]}" == 'Fail' ]; then
+				# 失败
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;41m%-20s %-10s %-30s %-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"   #红底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-20s %-10s %-30s \033[1;31m%-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"    #红字 				
+			elif  [ "${arr[5]}" == 'Success' ]; then
+				# 成功 
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;42m%-20s %-10s %-30s %-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"    #绿底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-20s %-10s %-30s \033[1;32m%-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"   #绿字					
+			fi		
+		done < ${TmpDir_Log}Containers/Containers.log
+	else
+		echo "${LANG_NoData:-无数据...}"
+	fi
+	echo
+	 
+	echo 
+	echo -e "\033[5;31;43m${LANG_Show_Logs_02:-镜像日志}:\033[0m"  #闪烁:黄底红字	
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-22s %-12s %-32s %-12s\033[0m\n"    "时间"  "动作"  "目标"  "结果"   #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-22s %-12s %-32s %-12s\033[0m\n"   "时间"  "动作"  "目标"  "结果"    #白字	
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-20s %-10s %-30s %-10s\033[0m\n"   "Time"  "Action"  "Target"  "Result"    #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-20s %-10s %-30s %-10s\033[0m\n"    "Time"  "Action"  "Target"  "Result"    #白字
+	fi
+	# 表记录
+	if [ -e "${TmpDir_Log}Images/Images.log" ];then		
+		while read -r Imagesline
+		do				
+			# 设置分割符(源数据的预定义是#)	
+			IFS="#"	
+			# 读入到数组
+			arr=($Imagesline)			
+			if  [ "${arr[5]}" == 'Fail' ]; then
+				# 失败
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;41m%-20s %-10s %-30s %-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"   #红底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-20s %-10s %-30s \033[1;31m%-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"    #红字 				
+			elif  [ "${arr[5]}" == 'Success' ]; then
+				# 成功 
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;42m%-20s %-10s %-30s %-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"    #绿底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-20s %-10s %-30s \033[1;32m%-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"   #绿字					
+			fi		
+		done < ${TmpDir_Log}Images/Images.log
+	else
+		echo "${LANG_NoData:-无数据...}"
+	fi
+	echo
+	 
+	echo
+	echo -e "\033[5;31;43m${LANG_Show_Logs_03:-网络日志}:\033[0m"  #闪烁:黄底红字	
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-22s %-12s %-32s %-12s\033[0m\n"    "时间"  "动作"  "目标"  "结果"   #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-22s %-12s %-32s %-12s\033[0m\n"   "时间"  "动作"  "目标"  "结果"    #白字	
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-20s %-10s %-30s %-10s\033[0m\n"   "Time"  "Action"  "Target"  "Result"    #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-20s %-10s %-30s %-10s\033[0m\n"    "Time"  "Action"  "Target"  "Result"    #白字
+	fi
+	# 表记录
+	if [ -e "${TmpDir_Log}Networks/Networks.log" ];then		
+		while read -r Networksline
+		do				
+			# 设置分割符(源数据的预定义是#)	
+			IFS="#"	
+			# 读入到数组
+			arr=($Networksline)
+			if  [ "${arr[5]}" == 'Fail' ]; then
+				# 失败
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;41m%-20s %-10s %-30s %-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"   #红底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-20s %-10s %-30s \033[1;31m%-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"    #红字 				
+			elif  [ "${arr[5]}" == 'Success' ]; then
+				# 成功 
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;42m%-20s %-10s %-30s %-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"    #绿底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-20s %-10s %-30s \033[1;32m%-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"   #绿字					
+			fi		
+		done < ${TmpDir_Log}Networks/Networks.log
+	else
+		echo "${LANG_NoData:-无数据...}"
+	fi
+	echo
+	 
+	echo
+	echo -e "\033[5;31;43m${LANG_Show_Logs_04:-卷日志}:\033[0m"  #闪烁:黄底红字	
+	# 表头(标题)
+	if [ "${SYS_Lang}" == "cn" ];then
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-22s %-12s %-32s %-12s\033[0m\n"    "时间"  "动作"  "目标"  "结果"   #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-22s %-12s %-32s %-12s\033[0m\n"   "时间"  "动作"  "目标"  "结果"    #白字	
+	else
+		[ "${ShowStyle}" == "0" ] && printf "\033[1;37;46m%-20s %-10s %-30s %-10s\033[0m\n"   "Time"  "Action"  "Target"  "Result"    #蓝底白字
+		[ "${ShowStyle}" == "1" ] && printf "\033[1;37m%-20s %-10s %-30s %-10s\033[0m\n"    "Time"  "Action"  "Target"  "Result"    #白字
+	fi
+	# 表记录
+	if [ -e "${TmpDir_Log}Volumes/Volumes.log" ];then		
+		while read -r Volumesline
+		do				
+			# 设置分割符(源数据的预定义是#)	
+			IFS="#"	
+			# 读入到数组
+			arr=($Volumesline)
+			if  [ "${arr[5]}" == 'Fail' ]; then
+				# 失败
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;41m%-20s %-10s %-30s %-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"   #红底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-20s %-10s %-30s \033[1;31m%-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"    #红字 				
+			elif  [ "${arr[5]}" == 'Success' ]; then
+				# 成功 
+				[ "${ShowStyle}" == "0" ] && printf "\033[1;37;42m%-20s %-10s %-30s %-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"    #绿底白字 
+				[ "${ShowStyle}" == "1" ] && printf "%-20s %-10s %-30s \033[1;32m%-10s\033[0m\n"    "${arr[1]}"  "${arr[3]}"  "${arr[4]}"  "${arr[5]}"   #绿字					
+			fi		
+		done < ${TmpDir_Log}Volumes/Volumes.log
+	else
+		echo "${LANG_NoData:-无数据...}"
+	fi
+	echo	
+	
+	IFS=${oldIFS}
+	# 清除变量
+	unset ShowStyle	
+	unset arr	
+}
+##### 函数测试 #####
+# Show_Logs_Small
+
+# ================================================== 
+# 函数名称：Show_Logs		 					  	 
+# 函数功能：显示日志列表							 
+# 函数参数：			 		 	  				 
+#     		 [$1]: 显示风格(0:背景<默认>|1:无背景)  		      	 
+# 			 									 	 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_Logs(){	
+	# 显示风格(0:背景<默认>|1:无背景)
+	ShowStyle="${1:-0}"	
+	if [ "${SYS_isSmallScreen}" == "1" ];then
+		# 小屏
+		Show_Logs_Small "${ShowStyle}"
+	else
+		# 满屏
+		Show_Logs_Full "${ShowStyle}"
+	fi		
+	# 清除变量
+	unset ShowStyle 
+}
+##### 函数测试 #####
+# Show_Logs 
+
+
+
+# ================================================== 
+# 函数名称：Show_About				  	 
+# 函数功能：显示关于		 
+# 函数参数：			 		 	  				 
+#     	 [$1]:        	 
+# 
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# ================================================== 
+function Show_About(){
+	# 加载
+	Infos_About
+	# 显示
+	echo -e "\033[1;37m       ${SYS_About_Note}\033[0m"
+	echo
+	if [ "${SYS_Lang}" == "cn" ];then
+		echo -e "\033[1;37m       作者: \033[0m"${SYS_About_Author}
+		echo -e "\033[1;37m       项目: \033[0m"${SYS_About_Project}
+	else
+		echo -e "\033[1;37m        Author: \033[0m"${SYS_About_Author}
+		echo -e "\033[1;37m       Project: \033[0m"${SYS_About_Project}
+	fi
+	echo
+}
+##### 函数测试 #####
+#Show_About
+
+# ----函数定义------------------------------------------------------------------------------------------#
+
+# ----函数调用------------------------------------------------------------------------------------------#
+# ${1,,} : 将字符串转换为小写
+# 输出帮助文档
+[ "${1,,}" == '--help' ] &&  outhelp
+
+
+# ----函数调用------------------------------------------------------------------------------------------#
+
+
+
+
+
+
+

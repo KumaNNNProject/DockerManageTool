@@ -1,0 +1,56 @@
+# 备注
+# 如下去除空格，TAB，换行符等用户自定义函数。
+# 正则中的+或*都可实现
+# 此文件使用 awk -f 载入。
+
+# 去掉变量左边的空白符
+function ltrim(s) { sub(/^[ \t\r\n]+/, "", s); return s }
+#function ltrim(s) { sub(/^[[:blank:]]*/, "", s); return s }
+# 去掉变量右边的空白符
+function rtrim(s) { sub(/[ \t\r\n]+$/, "", s); return s }
+#function rtrim(s) { sub(/[[:blank:]]*$/, "", s); return s }
+# 去除首尾空格(可展开，非单行)
+function trim(s) { 
+	return rtrim(ltrim(s)); 
+}
+
+# 测试
+BEGIN{
+	FS=":";	
+}
+/Architecture/{
+    # $1: "Architecture"
+    # $2: "          x86_64"
+	
+	# 去除首尾空格
+	a=trim($1)
+	b=trim($2)
+	#print "架构:["b"]"
+	
+	# 未包含双引号
+	#   源数据包含空格，外部使用时会故障
+	#print "aa="a;       #输出: aa=Architecture
+	#print "bb="$2;      #输出: bb=          x86_64
+	
+	# 包含双引号
+	#print "aa=\""a"\"";  #输出: aa="Architecture"
+	#print "bb=\""$2"\""; #输出: bb="          x86_64"
+}
+/CPU op-mode/{
+	# $1: "CPU op-mode(s)"
+    # $2: "        32-bit, 64-bit"
+	
+	b=trim($2);	
+	# 分割字符串到数组
+	# split(string, array [, fieldsep [, seps ] ])
+	#   fieldsep: 分隔符，默认使用FS
+	#   seps: gawk特有的扩展
+	split(b, a, ",");	
+	
+	#print "a[1]=\""a[1]"\""; #输出: a1="32-bit"
+	#print "a1=\""a[1]"\""; #输出: a1="32-bit"
+	#print "a2=\""a[2]"\""; #输出: a2=" 64-bit"
+}
+END {
+    
+}

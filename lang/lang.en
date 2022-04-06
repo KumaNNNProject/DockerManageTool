@@ -1,0 +1,63 @@
+#!/bin/bash
+
+LANG_SureDelete="Are you sure you want to delete"
+LANG_Yes="Yes"
+LANG_No="No"
+LANG_Ok="Complete"
+LANG_Force="Force"
+LANG_Attention="Attention"
+LANG_ForceDelete="Force delete"
+LANG_Optional="Optional options"
+LANG_ExecutionSuccess=">>> Execution success"
+LANG_ExecutionFailure=">>> Execution failure"
+LANG_Exit="Exit"
+LANG_PleaseInput="Please input"
+LANG_Warning_InputNotEmpty="Warning: input cannot be empty..."
+LANG_Warning_InputIllegal="Warning: illegal input..."
+LANG_CurrentSelected="Current selected"
+LANG_Image="Image"
+LANG_Container="Container"
+LANG_Network="Network"
+LANG_Volume="Volume"
+LANG_SearchItem="Search item"
+LANG_Details="Details"
+LANG_CurrentInput="Current input"
+LANG_ReInput="Re input"
+LANG_SavePath="Please enter the save path"
+LANG_InputArg="Please enter relevant parameters in the following format, separated by spaces"
+LANG_Example="Example"
+LANG_Default="Default"
+LANG_Top_Name="Name"
+LANG_Top_Action="Action"
+LANG_Top_Repository="Repository"
+LANG_Top_Tag="Tag"
+LANG_Total="Total"
+LANG_Run="Running"
+LANG_Pause="Pause"
+LANG_Stop="Stop"
+LANG_Use="Use"
+LANG_Isolated="Isolated"
+LANG_Status="Status"
+LANG_Log="Log"
+LANG_NoData="No data..."
+LANG_UnknownInputContinue="Unknown input, press any key to continue..."
+LANG_InputNotEmptyContinue="Input cannot be empty, press any key to continue..."
+
+LANG_Menus_Main="Main menu"
+LANG_Menus_NetworkManage="Networks Manage"
+LANG_Menus_SearchsManage="Searchs Manage"
+LANG_Menus_VolumesManage="Volumes Manage"
+LANG_Menus_ContainersManage="Containers Manage"
+LANG_Menus_ImagesManage="Images Manage"
+LANG_Menus_Other="Other"
+LANG_Menus_InputNumView="Enter number to view "
+LANG_Menus_AndOther=" and other operations"
+LANG_Menus_AnyKeyContinue="Press any key to continue..."
+
+
+
+
+
+
+
+

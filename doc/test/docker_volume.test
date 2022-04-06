@@ -1,0 +1,67 @@
+#!/bin/bash
+
+
+# 卷 测试
+# 获取所有卷信息
+# docker volume ls 
+#
+# 卷详情
+# docker volume inspect <id>
+
+# range : 遍历
+# json : 编码为json字符串。当前会自动双引号包裹每项，且处理空格。
+#        如，"PHPIZE_DEPS=autoconf \t\tdpkg-dev \t\tfile \t\tg++ \t\tre2c"
+# println : 在新行上打印每个值。也可以直接使用 {{println}} 来换行
+# end ：遍历的结束。
+## 更多参阅：[Docker格式化输出命令:docker inspect --format学习笔记](https://www.cnblogs.com/kevingrace/p/6424476.html)
+#docker volume inspect --format '{{range .ContainerConfig.Env}}{{json .}}{{println}}{{end}}'   ${ID}
+
+oldIFS=$IFS
+#IFS="@"
+ID=8c170a5fd6a993c65a87a0bf5446127bf95dc96852e1e74f3f6810fb1c2c34ae
+# ID=46fbd88bb8d5643d1af27e1026fd9bacd5e9c250664ee3bd404ee58f3afb270b
+# ID=portainer_data
+
+
+
+
+
+# 卷列表
+# echo '所有卷：'
+# 卷名称#卷驱动#卷范围#卷挂载点
+#docker volume ls --format "{{.Name}}#{{.Driver}}#{{.Scope}}#{{.Mountpoint}}"
+# echo
+# docker volume ls --format "{{.Name}}"
+# docker volume ls --format "{{.Driver}}"
+# docker volume ls --format "{{.Scope}}"
+# docker volume ls --format "{{.Mountpoint}}"
+# docker volume ls --format "'{{.Labels}}'"
+# exit 0
+
+# 卷名称#卷挂载点#创建时间#卷范围#卷驱动
+docker volume inspect --format "{{.Name}}#{{.Mountpoint}}#'{{.CreatedAt}}'#{{.Scope}}#{{.Driver}}"  ${ID}
+
+# 卷详情(部分)
+echo [${ID}]:
+echo 
+echo 名称：Name
+docker volume inspect --format '{{.Name}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 卷挂载点：Mountpoint
+docker volume inspect --format '{{.Mountpoint}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 创建时间：CreatedAt 
+docker volume inspect --format '{{.CreatedAt}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 卷范围：Scope
+docker volume inspect --format '{{.Scope}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 卷驱动：Driver
+docker volume inspect --format '{{.Driver}}'  ${ID}
+echo ----------------------------------------------------------
+
+

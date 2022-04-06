@@ -1,0 +1,18 @@
+#!/bin/bash
+
+LANG_Menu_Images_01="Image list"
+LANG_Menu_Images_02="Import image"
+LANG_Menu_Images_03="Export image"
+LANG_Menu_Images_04="Pull image"
+LANG_Menu_Images_05="Cleanup image"
+LANG_Menu_Images01_01="Image list"
+LANG_Menu_Images01_02="Image details"
+LANG_Menu_Images02_01="Import image"
+LANG_Menu_Images03_01="Export image"
+LANG_Menu_Images04_01="Pull image"
+LANG_Menu_Images05_01="Cleanup image"
+LANG_Menu_Images01Details_01="Image list"
+LANG_Menu_Images01Details_02="Image details"
+LANG_Menu_Images01Details_03="Image delete"
+LANG_Menu_Images01Details_04="Image modification(set image Tag)"
+LANG_Menu_Images01Details_05="Image export"

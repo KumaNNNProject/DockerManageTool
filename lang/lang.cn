@@ -1,0 +1,72 @@
+#!/bin/bash
+
+LANG_SureDelete="确定要删除吗"
+LANG_Yes="是"
+LANG_No="否"
+LANG_Ok="完成"
+LANG_Force="强制"
+LANG_Attention="注意"
+LANG_ForceDelete="强制删除"
+LANG_Optional="可选选项"
+LANG_ExecutionSuccess=">>> 执行成功"
+LANG_ExecutionFailure=">>> 执行失败"
+LANG_Exit="退出"
+LANG_PleaseInput="请输入"
+LANG_Warning_InputNotEmpty="警告: 输入不能为空..."
+LANG_Warning_InputIllegal="警告: 输入非法..."
+LANG_CurrentSelected="当前选择的"
+LANG_Image="镜像"
+LANG_Container="容器"
+LANG_Network="网络"
+LANG_Volume="卷"
+LANG_SearchItem="搜索项"
+LANG_Details="详情"
+LANG_CurrentInput="当前输入"
+LANG_ReInput="重新输入"
+LANG_SavePath="请输入保存路径"
+LANG_InputArg="请按如下格式输入相关参数，空格分隔"
+LANG_Example="示例"
+LANG_Default="默认"
+LANG_Top_Name="名称"
+LANG_Top_Action="动作"
+LANG_Top_Repository="仓库"
+LANG_Top_Tag="标签"
+LANG_Total="总数"
+LANG_Run="运行"
+LANG_Pause="暂停"
+LANG_Stop="停止"
+LANG_Use="使用"
+LANG_Isolated="孤立"
+LANG_Status="状态"
+LANG_Log="日志"
+LANG_NoData="无数据..."
+LANG_UnknownInputContinue="未知输入，按任意键继续..."
+LANG_InputNotEmptyContinue="输入不能为空，按任意键继续..."
+
+
+LANG_Menus_Main="主菜单"
+LANG_Menus_NetworkManage="网络管理"
+LANG_Menus_SearchsManage="搜索管理"
+LANG_Menus_VolumesManage="卷管理"
+LANG_Menus_ContainersManage="容器管理"
+LANG_Menus_ImagesManage="镜像管理"
+LANG_Menus_Other="其它"
+LANG_Menus_InputNumView="输入序号查看 "
+LANG_Menus_AndOther=" 及其它操作"
+LANG_Menus_AnyKeyContinue="按任意键继续..."
+
+
+
+#LANG_
+# "${LANG_Menus_AnyKeyContinue:-按任意键继续...}"
+# "${LANG_Menus_SearchsManage:-搜索管理}"
+# "${LANG_Menus_VolumesManage:-卷管理}"
+# "${LANG_Menus_ContainersManage:-容器管理}"
+# "${LANG_Menus_ImagesManage:-镜像管理}"
+# "${LANG_Menus_Other:-其它}"
+
+
+
+
+
+

@@ -1,0 +1,14 @@
+#!/bin/bash
+
+LANG_Menu_Volumes_01="Volume list"
+LANG_Menu_Volumes_02="Create volume"
+LANG_Menu_Volumes_03="Delete volume"
+LANG_Menu_Volumes_04="Cleanup volume"
+LANG_Menu_Volumes01_01="Volume list"
+LANG_Menu_Volumes01_02="Volume details"
+LANG_Menu_Volumes02_01="Create volume"
+LANG_Menu_Volumes03_01="Delete volume"
+LANG_Menu_Volumes04_01="Cleanup volume"
+LANG_Menu_Volumes01Details_01="Volume list"
+LANG_Menu_Volumes01Details_02="Volume details"
+LANG_Menu_Volumes01Details_03="Volume delete"

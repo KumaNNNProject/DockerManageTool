@@ -1,0 +1,151 @@
+#!/bin/bash
+
+登录到默认虚拟机
+docker-machine ssh default
+获取root
+sudo -i
+
+运行容器
+docker run --name php54_test --rm  -it -v /mnt/f_DockerData/Tmp/a/:/mnt/tmp/:rw  -v /mnt/f_DockerData/Tmp/a/aa/:/mnt/tmp2/:rw  php:5.4-fpm /bin/bash
+docker run --name php54_test  -it -v /mnt/f_DockerData/Tmp/a/:/mnt/tmp/:rw  -v /mnt/f_DockerData/Tmp/a/aa/:/mnt/tmp2/:rw  php:5.4-fpm /bin/bash
+docker run  --rm -it  -v /mnt/f_DockerData/Tmp/a/:/mnt/tmp/:rw  builder/php:7.3-fpm  /bin/bash
+
+# -p 8080:80 ： 将容器的 80 端口映射到宿主机的 8080 端口 。
+docker run --name php73_test2 -d -p 8086:86 -v /mnt/f_DockerData/Tmp/a/:/mnt/tmp/:rw   php:7.3-fpm 
+
+docker run --name nginx1.15 \
+--restart="always" \
+--privileged=true \
+-d \
+-p 80:80  \
+-p 443:443  \
+nginx:1.15;
+
+查看元数据
+docker inspect builder/php:7.3-fpm
+
+删除镜像
+docker rmi -f  d72dc579e361
+
+构建镜像
+./Builder  -b PHP-FPM_7.3.Conf
+
+# ==========================================================================================================
+
+docker run --name ubuntu_test --rm  -it -v /mnt/f_DockerData/Tmp/a/aa/:/mnt/tmp/:rw  ubuntu:latest  /bin/bash
+docker run --name ubuntu_test -it ubuntu:latest 
+
+/PROC/CPUINFO
+
+# pecl install xdebug-2.8.1
+# apt install -y  unixodbc-dev --force-yes
+# docker-php-ext-enable  xdebug
+
+# cp sources.list  /etc/apt/
+# apt update
+
+# mkdir -p /tmp/ext \
+# && cp -rf /mnt/tmp/aa/* /tmp/ext/ \
+# && cd /tmp/ext/ \
+# && ./Installer.sh
+	
+	# OK
+	#apt-get clean 命令清除遗留在/var/cache中的已取回的包文件的本地仓库。
+	#它清除的目录是 /var/cache/apt/archives/和/var/cache/apt/archives/partial/。
+	#它留在 /var/cache/apt/archives中的唯一文件是 lock 文件和 partial 子目录。
+	# apt-get clean
+
+	#apt-get autoclean 类似于apt-get clean，它会清除已检索包文件的本地仓库，
+	#但它只会删除不会再下载且几乎无用的文件。
+	#它有助于防止缓存过大。
+	# apt-get autoclean
+
+	#/var/cache/apt/archives  已经下载到的软件包都放在这里（用 apt-get install 安装软件时，软件包的临时存放路径）
+	#/var/lib/apt/lists       使用apt-get update命令会从/etc/apt/sources.list中下载软件列表，并保存到该目录
+	# rm -rf /var/cache/apt/archives/*
+	# rm -rf /var/lib/apt/lists/*
+
+	#pecl默认下载位置： /tmp/pear/install/
+	# rm -rf /tmp/pear/install/*
+
+	
+# ==========================================================================================================
+
+# echo ----[libpng-dev]-----------------------------------------------------------
+# apt install -y libpng-dev --force-yes
+# echo 
+# echo ----[libjpeg-dev]-----------------------------------------------------------
+# apt install -y libjpeg-dev --force-yes
+# echo 
+
+# 安装ImageMagick
+# mkdir ImageMagick
+# tar -xf ImageMagick-7.0.9-12.tar.gz -C ImageMagick --strip-components=1
+# cd ImageMagick 
+# ./configure --prefix=/usr/local/imagemagick   --enable-shared  --with-modules 
+# make -j2 
+# make install 
+
+# 可能需要配置动态链接程序运行时绑定
+# ldconfig /usr/local/lib
+# 软链接
+#ln -s /usr/local/imagemagick/bin/MagickWand-config  /usr/local/bin/MagickWand-config
+
+#echo ----[PWD: `pwd`]-----------------------------------------------------------
+# #cd ..  
+# # 安装 imagick
+# mkdir imagick \
+# && tar -xf imagick-3.4.4.tgz -C imagick --strip-components=1 \
+# && ( cd imagick && phpize && ./configure --with-php-config=/usr/local/bin/php-config  --with-imagick=/usr/local/imagemagick && make -j2 && make install ) \
+# && docker-php-ext-enable imagick
+
+
+
+
+# 【configure: error: libXpm.(a|so) not found】
+# see
+# [error: libXpm.(a|so)](https://www.cnblogs.com/wusong/p/4694938.html)
+# [php 编译 configure: error: libXpm.(a|so) not found](https://blog.csdn.net/niugang123/article/details/84972934)
+# echo 建立软链接...
+# for i in `find /usr/  -name libXpm*`	
+# do	
+	# #str: /usr/lib/x86_64-linux-gnu/libXpm.so.4.11.0
+	# #echo str: ${i}
+	# #ln -s  /usr/lib64/libXpm.so*   /usr/lib/
+	# ln -s  ${i}   /usr/lib/
+# done
+#echo 
+
+#echo ----[configure]-----------------------------------------------------------
+#docker-php-ext-configure gd --with-php-config=/usr/local/bin/php-config  --with-vpx-dir --with-webp-dir --with-jpeg-dir   --with-zlib-dir  --with-png-dir  --with-freetype-dir   --with-xpm-dir
+
+#docker-php-ext-install  gd
+
+
+
+# ==========================================================================================================
+
+
+# mkdir swoole \
+# && tar -xf swoole-1.9.23.tgz -C swoole --strip-components=1 \
+# && ( cd swoole && phpize && ./configure --with-php-config=/usr/local/bin/php-config  && make -j2 && make install ) \
+# && docker-php-ext-enable swoole
+
+
+# cp icu4c-52_2-src.tgz /tmp/
+# cd /tmp/
+# mkdir /usr/local/icu
+# mkdir icu 
+# tar -zxf  icu4c-52_2-src.tgz  -C icu  --strip-components=1
+# cd icu/source
+# ./configure --prefix=/usr/local/icu
+# make && make install
+# cd /mnt/tmp/
+
+# cp intl-3.0.0.tgz /tmp/
+# cd /tmp/
+# mkdir intl \
+# && tar -xf intl-3.0.0.tgz -C intl --strip-components=1 \
+# && ( cd intl && phpize && ./configure --with-php-config=/usr/local/bin/php-config --enable-intl  --with-icu-dir=/usr/local/icu && make -j2 && make install ) \
+# && docker-php-ext-enable intl
+# cd /mnt/tmp/

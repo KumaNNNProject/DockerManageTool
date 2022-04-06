@@ -1,0 +1,158 @@
+#!/bin/bash
+
+
+# 网络 测试
+# 获取所有网络信息
+# docker network ls 
+#
+# 网络详情
+# docker network inspect <id>
+
+# range : 遍历
+# json : 编码为json字符串。当前会自动双引号包裹每项，且处理空格。
+#        如，"PHPIZE_DEPS=autoconf \t\tdpkg-dev \t\tfile \t\tg++ \t\tre2c"
+# println : 在新行上打印每个值。也可以直接使用 {{println}} 来换行
+# end ：遍历的结束。
+## 更多参阅：[Docker格式化输出命令:docker inspect --format学习笔记](https://www.cnblogs.com/kevingrace/p/6424476.html)
+#docker network inspect --format '{{range .ContainerConfig.Env}}{{json .}}{{println}}{{end}}'   ${ID}
+
+oldIFS=$IFS
+#IFS="@"
+ID=79f6f0e6dc97
+# ID=16cb0b4f146e
+# ID=eaccea8b1687
+
+
+
+#docker network inspect --format '{{.Name}}#{{.Id}}#{{.Created}}#{{.Scope}}#{{.Driver}}#{{.EnableIPv6}}#{{.Internal}}'  ${ID}
+#docker network inspect --format '{{.IPAM.Driver}}#{{range  .IPAM.Config}}{{.Subnet}}#{{.Gateway}}{{end}}'  ${ID}
+# 采用如下
+# 网络名称#网络ID#创建时间#网络范围#网络驱动#启动IPv6#内部网络#IPAM驱动#IPAM子网#IPAM网关
+#docker network inspect --format "{{.Name}}#{{.Id}}#'{{.Created}}'#{{.Scope}}#{{.Driver}}#{{.EnableIPv6}}#{{.Internal}}#{{.IPAM.Driver}}#{{range  .IPAM.Config}}{{.Subnet}}#{{.Gateway}}{{end}}"  ${ID}
+
+
+# 容器ID#容器名称#容器MAC#容器IP4#容器IP6
+# 双引号内需要转义
+#docker network inspect --format "{{range \$ContainerID,\$conf := .Containers}}{{\$ContainerID}}#{{\$conf.Name}}#'{{\$conf.MacAddress}}'#'{{\$conf.IPv4Address}}'#'{{\$conf.IPv6Address}}'{{println}}{{end}}"  ${ID}
+#echo 
+# 双引号内需要转义
+#aa=`docker network inspect --format "{{range \\$ContainerID,\\$conf := .Containers}}{{\\$ContainerID}}#{{\\$conf.Name}}#'{{\\$conf.MacAddress}}'#'{{\\$conf.IPv4Address}}'#'{{\\$conf.IPv6Address}}'{{println}}{{end}}"  ${ID}`
+#echo   $aa
+
+# 标签
+# "com.docker.compose.network":"lnmp_net"
+# "com.docker.compose.project":"a01"
+# "com.docker.compose.version":"1.24.1"
+#docker network inspect --format '{{range $k,$v := .Labels}}{{json $k}}:{{json $v}}{{println}}{{end}}'  ${ID}
+exit 0
+
+# 网络列表
+# echo '所有网络：'
+# docker network ls --format "{{.ID}}#{{.Name}}#{{.Driver}}#{{.Scope}}#{{.IPv6}}#{{.Internal}}#'{{.CreatedAt}}'"
+# echo
+# docker network ls --format "{{.ID}}"
+# docker network ls --format "{{.Name}}"
+# docker network ls --format "{{.Driver}}"
+# docker network ls --format "{{.Scope}}"
+# docker network ls --format "{{.IPv6}}"
+# docker network ls --format "{{.Internal}}"
+# docker network ls --no-trunc --format "'{{.Labels}}'"
+# docker network ls --format "'{{.CreatedAt}}'"
+
+
+# 网络详情(部分)
+echo [${ID}]:
+echo 
+echo 名称：Name
+docker network inspect --format '{{.Name}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Id 
+docker network inspect --format '{{.Id}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 创建时间：Created 
+docker network inspect --format '{{.Created}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 网络范围：Scope
+docker network inspect --format '{{.Scope}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 网络驱动：Driver
+docker network inspect --format '{{.Driver}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 启用IP6：EnableIPv6
+docker network inspect --format '{{.EnableIPv6}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 内部网络：Internal
+docker network inspect --format '{{.Internal}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 可连接：Attachable
+docker network inspect --format '{{.Attachable}}'  ${ID}
+echo ----------------------------------------------------------
+
+echo 
+echo IPAM：IPAM.Driver
+docker network inspect --format '{{.IPAM.Driver}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo IPAM：IPAM.Options[]
+#docker network inspect --format '{{.IPAM.Options}}'  ${ID}
+docker network inspect --format '{{range $k,$v := .Options}}{{json $k}}:{{json $v}}{{println}}{{end}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo IPAM：IPAM.Config[]
+# 数据结构：
+ # "Config": [
+                # {
+                    # "Subnet": "172.18.0.0/16",
+                    # "Gateway": "172.18.0.1"
+                # }
+            # ]		
+##############################
+# 遍历(range)，$p等于数字索引 0；$conf等于{}，每个元素为{}
+#docker network inspect --format '{{range $p,$conf := .IPAM.Config}}{{$p}} -> {{(index $conf).Subnet}}#{{(index $conf).Gateway}} {{end}}'  ${ID}
+docker network inspect --format '{{range  .IPAM.Config}}{{.Subnet}}{{end}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 容器：Containers {}
+# 数据结构：
+# "Containers": {
+	# "33c10683dcb8fcfa7080f67eda6fb83b09f5ef404ddb5bd9459ff8df0f6dd7e6": {
+		# "Name": "php73_test2",
+		# "EndpointID": "383efea13f3cd4f8c3273ea5a7d7c0a97f21877b4b09d356a42be058097155dc",
+		# "MacAddress": "02:42:ac:12:00:02",
+		# "IPv4Address": "172.18.0.2/16",
+		# "IPv6Address": ""
+	# },
+	# "c151594a491f5793c1170d68c906e055c866fd7b540a6767c78d117aaf292fba": {
+		# "Name": "php73_test",
+		# "EndpointID": "40f70a0493b2c642e645c6a1c605fc24fcd109d1d723f3d4c86e0eef2b276f99",
+		# "MacAddress": "02:42:ac:12:00:03",
+		# "IPv4Address": "172.18.0.3/16",
+		# "IPv6Address": ""
+	# }
+# },
+##############################
+# 遍历(range)，$ContainerID等于"33c10683...df0f6dd7e6"；$conf等于{}，每个元素为 $ContainerID:{}
+# $conf后可直接使用属性名来获取其值，如 $conf.Name
+docker network inspect --format '{{range $ContainerID,$conf := .Containers}}{{$ContainerID}} -> {{$conf.Name}} #{{$conf.MacAddress}}#{{$conf.IPv4Address}}#{{$conf.IPv6Address}}{{println}}{{end}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 标签：Labels{}
+# 数据结构：
+# "Labels": {
+	# "com.docker.compose.network": "lnmp_net",
+	# "com.docker.compose.project": "a01",
+	# "com.docker.compose.version": "1.24.1"
+# }
+##############################
+# 遍历(range)，$k等于"com.docker.compose.network"；$v等于"lnmp_net"
+# 因为key的不确定性，只能使用此赋值方式来获取key 
+docker network inspect --format '{{range $k,$v := .Labels}}{{$k}} -> {{$v}}{{println}}{{end}}'  ${ID}
+echo ----------------------------------------------------------
+

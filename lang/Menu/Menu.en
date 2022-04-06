@@ -1,0 +1,10 @@
+#!/bin/bash
+
+LANG_Menu_Top_01="Host name"
+LANG_Menu_Top_02="Host IP"
+LANG_Menu_Footer_01="Exit"
+LANG_Menu_Footer_02="Previous menu"
+LANG_Menu_Handle_01="Please input"
+
+
+

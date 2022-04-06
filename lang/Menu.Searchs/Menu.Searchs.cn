@@ -1,0 +1,11 @@
+#!/bin/bash
+
+LANG_Menu_Searchs_01="搜索镜像"
+LANG_Menu_Searchs_02="搜索清理"
+LANG_Menu_Searchs01_01="搜索镜像"
+LANG_Menu_Searchs01_02="搜索详情"
+LANG_Menu_Searchs01Details_01="未知输入，请重新输入"
+LANG_Menu_Searchs01Details_02="搜索列表"
+LANG_Menu_Searchs01Details_03="搜索详情"
+LANG_Menu_Searchs01Details_04="拉取镜像"
+LANG_Menu_Searchs02_01="搜索清理"

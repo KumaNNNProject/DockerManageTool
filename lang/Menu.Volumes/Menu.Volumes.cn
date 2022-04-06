@@ -1,0 +1,14 @@
+#!/bin/bash
+
+LANG_Menu_Volumes_01="卷列表"
+LANG_Menu_Volumes_02="创建卷"
+LANG_Menu_Volumes_03="删除卷"
+LANG_Menu_Volumes_04="清理卷"
+LANG_Menu_Volumes01_01="卷列表"
+LANG_Menu_Volumes01_02="卷详情"
+LANG_Menu_Volumes02_01="创建卷"
+LANG_Menu_Volumes03_01="删除卷"
+LANG_Menu_Volumes04_01="清理卷"
+LANG_Menu_Volumes01Details_01="卷列表"
+LANG_Menu_Volumes01Details_02="卷详情"
+LANG_Menu_Volumes01Details_03="卷删除"

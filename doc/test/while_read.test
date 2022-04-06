@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# while read 方案测试
+#
+
+
+oldIFS=$IFS
+IFS="@"
+
+
+# 如果IFS设置为#，这些#会变为空格在sed时
+ss=`docker ps --format "{{.ID}}#{{.Image}}#'{{.RunningFor}}'#'{{.Status}}'#{{.Ports}}#{{.Networks}}#{{.Names}}" | sed 's/ hours ago/小时前/g'`
+#ss="8fe2f691373d#php:7.3-fpm#'17 分钟前'#'Up 17 minutes'#9000/tcp#bridge#php73_test"
+
+# ss: 8fe2f691373d#php:7.3-fpm#'17 分钟前'#'Up 17 minutes'#9000/tcp#bridge#php73_test
+echo $ss
+
+
+# A组：while保存数据到文件，再加载文件(设置变量)
+# 优点：数据持久化
+# 缺点：操作复杂
+A_StartTime_s=`date +%s`
+echo "#!/bin/bash">/tmp/a.sh
+i=1
+echo $ss |while read -r line
+do
+	#echo $i : $line
+	# 设置分割符
+	# 源数据的预定义是#
+	IFS="#"
+	# 读入到数组
+	arr=($line)
+	echo "arr_ID[${i}]=\"${arr[0]}\"">>/tmp/a.sh
+	echo "arr_Image[${i}]=\"${arr[1]}\"">>/tmp/a.sh
+	echo "arr_RunningFor[${i}]=\"${arr[2]}\"">>/tmp/a.sh
+	echo "arr_Status[${i}]=\"${arr[3]}\"">>/tmp/a.sh
+	echo "arr_Ports[${i}]=\"${arr[4]}\"">>/tmp/a.sh
+	echo "arr_Networks[${i}]=\"${arr[5]}\"">>/tmp/a.sh
+	echo "arr_Names[${i}]=\"${arr[6]}\"">>/tmp/a.sh
+	#echo id:"${arr[0]}"	
+	let i++	
+done
+# 加载文件
+source /tmp/a.sh
+A_StopTime_s=`date +%s`
+echo A_Time: $(( $A_StopTime_s-$A_StartTime_s )) 
+echo 
+echo 'A_ID[1]:'"${arr_ID[1]}"
+echo 'A_ID[2]:'"${arr_ID[2]}"
+echo 'A_Image[1]:'"${arr_Image[1]}"
+echo 'A_Image[2]:'"${arr_Image[2]}"
+echo IFS:"${IFS}"
+echo ----------------------------------------------
+cat /tmp/a.sh
+echo ----------------------------------------------
+
+
+# B组：while从文件中读取
+# 优点：操作简单
+# 缺点：数据不能持久化
+B_StartTime_s=`date +%s`
+echo $ss>/tmp/a.txt
+i=1
+while read -r line
+do	
+	# 文件是一次性读取到二进制流，不是逐行从文件中读取，中途删除文件无影响
+	rm -f /tmp/a.txt  2>/dev/null
+	#echo $i : $line
+	IFS="#"
+	arr=($line)
+	brr_ID[${i}]="${arr[0]}"
+	brr_Image[${i}]="${arr[1]}"
+	brr_RunningFor[${i}]="${arr[2]}"
+	brr_Status[${i}]="${arr[3]}"
+	brr_Ports[${i}]="${arr[4]}"
+	brr_Networks[${i}]="${arr[5]}"
+	brr_Names[${i}]="${arr[6]}"
+	echo id:"[${arr[0]}]"
+	let i++	
+done < /tmp/a.txt
+B_StopTime_s=`date +%s`
+echo $B_StartTime_s
+echo $B_StopTime_s
+echo B_Time: $(( $B_StopTime_s-$B_StartTime_s )) 
+echo 
+echo 'B_ID[1]:'"${brr_ID[1]}"
+echo 'B_ID[2]:'"${brr_ID[2]}"
+echo 'B_Image[1]:'"${brr_Image[1]}"
+echo 'B_Image[2]:'"${brr_Image[2]}"
+echo 'B_Status[1]:'"${brr_Status[1]}"
+echo IFS:"${IFS}"

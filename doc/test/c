@@ -1,0 +1,180 @@
+#!/bin/bash
+
+Sys_Debug="0"
+App_Debug="0"
+oldIFS=$IFS
+
+
+exit 0
+#----------------------------------------------------------------------------------------------------------------
+
+# () && (echo '执行成功') || (echo '执行失败')
+# 获取文件缓存时间戳
+# at=`cat "${DATA_Images}.time"`
+# echo $at
+#echo "`date +%s`">"${TmpDir_Networks_Sub}DATA_Networks_${ID}.sh.time"
+	
+#----------------------------------------------------------------------------------------------------------------
+#### 初始化流程 ####
+#DockerManagement.Init
+	#source file
+	#Init_Conf
+	#Init_FileDir
+	#Init_Logs
+	#Init_Infos
+
+#### 运行原理 ####	 
+# 将状态数据保存到脚本文件，并加载(设置保存时的时间戳)
+# 写（更新，删除等）操作时，重新将状态数据保存到脚本文件，并加载(设置保存时的时间戳)
+# 读 操作时，根据超时设置，从环境变量中读取或加载脚本文件，以获取数据
+
+#### 函数 ####
+# 调用关系
+# -Menu => Show  
+# Menu => Action  =>  CacheHandle(Infos)  Show 
+ 
+# 采集数据
+#(采集并存储状态数据，时效数据不存储)
+#Infos_Images
+#Infos_Image
+#Infos_Searchs
+#Infos_Search
+
+# 显示数据
+#(时效数据重新获取,如运行多久)
+#Show_* :无后缀为调度中心
+#Show_*_Small:小屏
+#Show_*_Full:满屏
+#Show_Searchs
+#Show_Search
+#Show_Dashboard
+
+# 动作
+#(启动 停止 删除等)(列表 搜索 拉取 导出导入等)  
+#Action_*
+
+# 其它  
+# SearchPrune(搜索清理)
+# CacheHandle(缓存机制，接管Infos)
+##  时间戳: Infos  
+###         Search只有Infos_Search有时间戳
+##      读: Action   
+##      写: Action 
+## 注意
+## Search内建缓存机制在Infos_Searchs
+# 日志系统
+##      读: 
+##      写:  
+## 字段
+### ID#时间#项#动作#目标(动作对象ID)#结果#原文
+### ID: LOG时间戳
+### 结果：成功Success  失败Fail
+### *.title
+### *.log
+
+# 菜单 
+# Menu_*  
+# Menu_Top
+# Menu_Nav
+# Menu_Footer
+# Menu_Handle
+#最大长度 85：
+# =====================================================================================
+# Menu_Main
+## 仪表盘
+### 独立lib:系统硬件基本信息，软件基本信息，docker基本信息等
+###     环境变量(不采集存储，直接使用命令env)
+## 镜像管理
+###  镜像列表
+###  导入镜像
+###  导出镜像
+###  拉取镜像
+###  清理镜像	
+## 容器管理
+###  容器列表
+###  运行容器(TODO List)
+###  导入容器
+###  导出容器
+## 网络管理
+###  网络列表
+###  创建网络
+###  删除网络
+###  清理网络
+## 卷管理
+###  卷列表
+###  创建卷
+###  删除卷
+###  清理卷
+## 搜索管理
+###  搜索镜像
+###  搜索清理
+## 其它
+###  刷新缓存  
+###  读取日志
+###  清理日志 
+###  Docker信息 
+###  设置
+###  关于
+
+# -优化
+# -多语言
+# -成型
+# -实际测试
+#	-镜像删除，不能用ID，不同标签的镜像同ID
+#	-镜像删除后详情数据更新不准确
+#   -日志修复，部分记录中 某些字段显示为空
+#   -详情菜单修复，未显示的菜单也能操作，需要屏蔽操作
+# 文档
+#   -开发文档
+#   -用户文档
+
+
+
+
+# (TODO List) 详见开发文档
+# API(跨平台跨语言，提供通用格式数据，如json) 
+# Api_*
+# docker-compose
+
+
+#### 变量 ####
+# INFO_Images_*
+# INFO_Images_*[@]
+# INFO_Images_<id>_*
+# INFO_Images_<id>_*[@]
+# INFO_Containers_*
+# INFO_Containers_*[@]
+# INFO_Containers_<id>_*
+# INFO_Containers_<id>_*[@]
+# INFO_Networks_*
+# INFO_Networks_*[@]
+# INFO_Networks_<id>_*
+# INFO_Networks_<id>_*[@]
+# INFO_Volumes_*
+# INFO_Volumes_*[@]
+# INFO_Volumes_<id>_*
+# INFO_Volumes_<id>_*[@]
+# 系统级变量
+# SYS_*
+# SYS_HostIp(Hip)
+# SYS_HostName
+# SYS_Title
+
+#printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n"   "ID"   '镜像'   "命令"   "创建时间"  "运行时间"  "状态"  "端口"  "网络"  "名称"
+#printf "%-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s %-15s\n"   "容器ID"   "镜像"   "运行时间"  "状态"  "端口"  "网络"  "名称"
+#printf "\n" ""
+#printf "%-55s"  `docker ps --format "{{.ID}}  {{.Image}}  {{.Command}}  {{.CreatedAt}}  {{.RunningFor}}  {{.Status}}  {{.Ports}}  {{.Networks}}  {{.Names}}"`
+#printf "%-15s %-15s %-15s %-35s %-45s %-45s %-15s %-15s %-15s\n"  `docker ps --format "${DEBUG} {{.ID}}  {{.Image}}   '{{.RunningFor}}'  '{{.Status}}'  {{.Ports}}  {{.Networks}}  {{.Names}}" | sed 's/ minutes ago/ 分钟前/g'`
+
+
+# 如果IFS设置为#，这些#会变为空格在sed时
+#ss=`docker ps --format "{{.ID}}#{{.Image}}#'{{.RunningFor}}'#'{{.Status}}'#{{.Ports}}#{{.Networks}}#{{.Names}}" | sed 's/ hours ago/小时前/g'`
+#ss="8fe2f691373d#php:7.3-fpm#'17 分钟前'#'Up 17 minutes'#9000/tcp#bridge#php73_test"
+
+# ss: 8fe2f691373d#php:7.3-fpm#'17 分钟前'#'Up 17 minutes'#9000/tcp#bridge#php73_test
+#echo $ss
+
+#docker images --format "{{.ID}}##{{.Repository}}##{{.Tag}}##{{.CreatedSince}}##{{.CreatedAt}}##{{.Size}}"
+
+
+printf "\n" ""

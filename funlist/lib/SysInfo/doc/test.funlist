@@ -1,0 +1,301 @@
+#!/bin/bash
+
+##########################################################
+#[FunList]
+# 硬件基本信息
+# 
+# 执行环境: 宿主机
+# 调用方式: ./  source  sh 
+# 调用参数: 			 		 	  				  
+#     	   [$1]:   --help 查看帮助文档		      	  
+#
+# 备注: 静态函数列表，使用source包含在文件头部
+##########################################################
+# 备注
+# exit 1  : 报错退出
+# exit 0  : 无错误退出
+# return int  : 函数内部，只能返回整数(0-255)
+#               推荐使用return来中止后续执行
+##########################################################
+
+# ----预置变量--------------------------------------------#
+# 调试开关
+Sys_Debug="${Sys_Debug:-0}"
+App_Debug="${App_Debug:-0}"
+# 默认分隔符
+oldIFS=$IFS
+
+# 脚本所在目录
+# https://qiushao.net/article/1489983836453
+# 不会改变cd目录
+# 局限性: 只适用于bash shell
+## OK # ./XXX.sh 	  :  /mnt/f_DockerData/scripts
+## OK # source XXX.sh :  /mnt/f_DockerData/scripts
+## NO # sh XXX.sh	  :  /home/docker
+#SCRIPT_DIR=$(cd $(dirname ${BASH_SOURCE[0]}); pwd)
+
+## OK # ./XXX.sh 	  :  /mnt/f_DockerData/scripts
+## OK # source XXX.sh :  /mnt/f_DockerData/scripts
+## OK # sh XXX.sh	  :  /mnt/f_DockerData/scripts
+SCRIPT_DIR=$(cd $(dirname $0); pwd)
+
+# 脚本名称
+SCRIPT_NAME=${BASH_SOURCE[0]##*/}
+
+# debug
+[ "${Sys_Debug}" == 1 ] && echo SCRIPT_DIR: ${SCRIPT_DIR}
+[ "${Sys_Debug}" == 1 ] && echo SCRIPT_NAME: ${SCRIPT_NAME}
+# ----预置变量--------------------------------------------#
+
+# 跳转到脚本目录
+#cd ${SCRIPT_DIR}
+
+# debug
+[ "${Sys_Debug}" == 1 ] && echo PWD: $(pwd)
+
+
+# ----参数处理------------------------------------------------------------------------------------------#
+
+# ----参数处理------------------------------------------------------------------------------------------#
+
+
+# ----函数定义------------------------------------------------------------------------------------------#
+
+# ================================================== 
+# 函数名称: outhelp		 					  	 
+# 函数功能: 帮助文档	  	  							 
+# 函数参数: 			 		 	  				 
+# 			 									 	 
+# 返回值:  									 	  
+# 		 Document	 									 	  
+# ================================================== 
+function outhelp(){			
+	echo
+	echo "xxxxxxxx"
+	echo
+	echo "先引用该文件，再调用相关函数"
+	echo "source ${SCRIPT_NAME}"
+	echo
+	echo "FunctionName  arg1  arg2  ... "
+	echo "       参数列表: "
+	echo "         arg1: xxxxxx。必需"
+	echo "         arg2: xxxxx。可选"
+	echo  	 
+	echo "示例: "
+	echo "FunctionName  8.0"  
+		
+	return 0 2>/dev/nul
+	exit 0
+}
+
+# ================================================== 
+# 函数名称: FunName			 					  	 
+# 函数功能: xxxxxxx	  	  							 
+# 函数参数: 			 		 	  				 
+#     		 $1:   执行的命令				      	 
+#     	   [$2]:   执行成功时回调			      	 
+#     	   [$3]:   执行失败时回调			     	 
+#     	   [$4]:   是否显示命令输出		      	  
+# 			 									 	 
+# 返回值:  									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# 		${Var}: 其它							  
+# ================================================== 
+function FunName(){		
+	# 参数检查
+	if [ ! $1 ]; then
+	   echo "FunName: 参数不能为空"
+	   return 1	
+	fi
+		
+	# [设置变量]
+	Var="$1"
+	
+	# Sys_Debug
+	[ "${Sys_Debug}" == 1 ] && echo fun
+	
+	# 目录处理
+	if [ ! -d $dir ]; then
+	   echo "目录不存在"
+	   (
+		   # -p : 如果存在错误，根据需要生成父目录
+		   sudo mkdir -p  "$dir"
+	   ) && (
+			echo "[创建目录成功]"
+	   ) || (
+			echo "[创建目录失败]"
+			return 1
+	   )
+	else
+	   echo "目录存在"
+	fi
+	
+	# 文件处理
+	if [ -e $file ]; then
+	   echo "文件存在"
+	else
+	   echo "文件不存在"
+	fi
+	
+	# 字符串比较
+	var1=TesT
+	var2=tEst
+	echo 小写:  ${var1,,} ${var2,,}
+	echo 大写:  ${var1^^} ${var2^^}
+	# 将字符串转换为小写并比较
+	[ "${var1,,}" == "tesT" ] &&  echo "var1=var2: 相等" || echo 'var1=var2: 不相等'
+	if [ "${var1,,}" == "${var2,,}" ]; then
+		echo "var1=var2: 相等"
+	else 
+		echo 'var1=var2: 不相等'
+	fi
+	
+	# 清除变量
+	unset Var
+	
+	return 0
+}
+##### 函数测试 #####
+#  FunName
+
+# ================================================== 
+# 函数名称: TTT		 					  	 
+# 函数功能: 获取CPU信息	  	  							 
+# 函数参数: 			 		 	  				 
+#     	   [$1]:   缓存目录(如 /tmp/cache/)		      	 
+# 			 									 	 
+# 返回值:  									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 									 	  
+# 变量列表:			 									 	  
+# 		${Var}: 其它							  
+# ================================================== 
+function TTT() {			
+	# ${FUNCNAME[0]} : 当前函数名
+	
+	# 缓存目录(/tmp/cache/)
+	CacheDir="${1:-}"
+	# 命令结果
+	CmdResult="`lscpu`"
+	# awk程序文件
+	ProgramFile="${FUNCNAME[0]}.awk"
+	
+	# 输出数据到文件	
+	if [ "${CacheDir}" != "" ];then
+		CacheFile="${CacheDir}${FUNCNAME[0]}.sh"		
+	fi
+	# 设置变量
+	eval `echo "$CmdResult" |  awk -v OutFile="${CacheFile}" -f ${ProgramFile}`
+		
+	# 清除变量
+	unset CacheDir
+	unset CacheFile
+	unset CmdResult
+	unset ProgramFile
+	
+	return 0
+}
+##### 函数测试 #####
+# TTT
+# echo '架构:' $SYSINFO_VAR_Hardware_CPU_Architecture
+# echo '型号名称:' $SYSINFO_VAR_Hardware_CPU_ModelName
+#
+#TTT  "/tmp/"
+#cat /tmp/TTT.sh
+
+# ----函数定义------------------------------------------------------------------------------------------#
+
+
+# ----函数调用------------------------------------------------------------------------------------------#
+# ${1,,} : 将字符串转换为小写
+# 输出帮助文档
+[ "${1,,}" == '--help' ] &&  outhelp
+
+# ----函数调用------------------------------------------------------------------------------------------#
+
+
+# 【解析数据，可用方案】
+# 参阅：Shell中将分隔符的字符串转为数组的几种方法
+# 参阅：解析输出+字符分割为数组
+# 参阅：
+
+# 1：IFS + while
+#    主要是将每行数据根据IFS分割存入数组，以使用。
+#    在循环体内，判断每行的内容，并设置相应的变量
+#        参阅：查找指定字符串是否存在
+#    再度分割字符串，涉及cut等
+#    缺点，变量只在循环内有效。可采取源数据重定向输入，或目标数据输出到文件，
+#          但都需要涉及文件操作，效率不高。
+
+# 2：grep + cut
+#    将数据源变量管道符到grep查找cut分割成数组，提取相应的内容。
+#    此方法，目标内容，是一个一个的单独提取。 
+#    缺点，每个目标内容编码有重合部分，如每个目标内容需要从数据源中重新处理。
+#    注：需要双引号才能保留换行符 (echo "$a" |...)
+#
+# a="`lscpu`"
+# b="`echo "$a" | grep -w "Architecture" | cut -d ':' -f 2`"
+# 去除首尾空格
+# c="`echo $b | sed 's/^[ \t]*//g' | sed 's/[ \t]*$//g'`"
+# echo Architecture_b: [${b}]
+# echo Architecture_c: [${c}]
+
+# 3：awk <推荐>
+#    使用awk处理数据源，并生成赋值字符串，再通过eval设置变量 
+#    再度分割字符串，使用awk内置函数split() 
+#    缺点，每个数据源需要外挂awk外部脚本
+# a="`lscpu`"
+# eval `echo "$a" |  awk -f t`
+# eval `lscpu |  awk -f t`
+# echo
+# echo aa: $aa
+# echo bb: $bb
+#echo a[1]: ${a[1]}
+
+
+
+#lscpu |  awk -v OutFile="/tmp/aat" -f SYSINFO_FUN_Hardware_CPU.awk
+#lsblk -P -o NAME,RM,RO,TYPE,SIZE,MOUNTPOINT,LABEL,FSTYPE,OWNER,GROUP,MODE,ROTA,TRAN,MAJ:MIN,VENDOR |  awk -v OutFile="/tmp/aat" -f SYSINFO_FUN_Hardware_HardDisk.awk
+
+#uname -osmrn |  awk -v OutFile="/tmp/aat" -f SYSINFO_FUN_Software_System_01.awk
+#cut -d: -f1 /etc/passwd |  awk -v OutFile="/tmp/aat" -f SYSINFO_FUN_Software_System_02.awk
+#cut -d: -f1 /etc/group |  awk -v OutFile="/tmp/aat" -f SYSINFO_FUN_Software_System_03.awk
+#df -Tk | grep -v "Use%" |  awk -v OutFile="/tmp/aat" -f SYSINFO_FUN_Software_Storage.awk
+#free -k | grep "Mem" |  awk -v OutFile="/tmp/aat" -f SYSINFO_FUN_Software_Memory.awk
+
+
+#rm /tmp/aat 
+# ip address show up | grep -w "mtu" | cut -d ":" -f 2  | sed 's/^[ \t]*//g' | sed 's/[ \t]*$//g' | cut -d "@" -f 1  >/tmp/NetworkInterfaceName.list
+# ifconfig | grep -w  "Link encap" | awk '{print $1}' >/tmp/NetworkInterfaceName.list
+# #cat /tmp/NetworkInterfaceName.list
+
+# i=0
+# echo "#!/bin/bash">/tmp/aat
+# while read -r line
+# do	
+	# #ifconfig ${line} | awk -v OutFile="/tmp/aat" -v idx=${i} -v iName="${line}" -f SYSINFO_FUN_Software_Network_ifconfig.awk
+	# ip address show ${line} | awk -v OutFile="/tmp/aat" -v idx=${i} -v iName="${line}" -f SYSINFO_FUN_Software_Network_ipaddress.awk
+	# let i++	
+# done < /tmp/NetworkInterfaceName.list
+
+##ifconfig lo |  awk -v OutFile="/tmp/aat" -v idx=0 -v iName="lo" -f SYSINFO_FUN_Software_Network_ifconfig.awk
+##ip address show eth0 |  awk -v OutFile="/tmp/aat" -v idx=0 -v iName="eth0" -f SYSINFO_FUN_Software_Network_ipaddress.awk
+
+#route -n | grep -v "Kernel IP routing table" | grep -v "Destination" |  awk -v OutFile="/tmp/aat"  -f SYSINFO_FUN_Software_Network_route.awk
+#ip route show |  awk -v OutFile="/tmp/aat"  -f SYSINFO_FUN_Software_Network_iproute.awk
+
+#echo '--------------------------------------------'
+#cat /tmp/aat
+
+
+
+
+
+
+
+

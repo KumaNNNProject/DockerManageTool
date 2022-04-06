@@ -1,0 +1,10 @@
+#!/bin/bash
+
+LANG_Menu_Top_01="主机名"
+LANG_Menu_Top_02="主机IP"
+LANG_Menu_Footer_01="退出"
+LANG_Menu_Footer_02="上级菜单"
+LANG_Menu_Handle_01="请输入"
+
+
+

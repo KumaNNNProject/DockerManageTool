@@ -1,0 +1,177 @@
+#!/bin/bash
+
+# 镜像详情 测试
+# docker image inspect <id>
+
+# range : 遍历
+# json : 编码为json字符串。当前会自动双引号包裹每项，且处理空格。
+#        如，"PHPIZE_DEPS=autoconf \t\tdpkg-dev \t\tfile \t\tg++ \t\tre2c"
+# println : 在新行上打印每个值。也可以直接使用 {{println}} 来换行
+# end ：遍历的结束。
+## 更多参阅：[Docker格式化输出命令:docker inspect --format学习笔记](https://www.cnblogs.com/kevingrace/p/6424476.html)
+#docker image inspect --format='{{range .ContainerConfig.Env}}{{json .}}{{println}}{{end}}'   ${ID}
+
+#ID=90102e6d83ad
+ID=2bcb04bdb83f
+
+
+echo [${ID}]:
+echo 
+echo Id 
+docker image inspect --format='{{.Id}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 仓库和标签：RepoTags[] 
+docker image inspect --format='{{range .RepoTags}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo RepoDigests[] 
+docker image inspect --format='{{range .RepoDigests}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 创建时间：Created 
+docker image inspect --format='{{.Created}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 容器：Container 
+docker image inspect --format='{{.Container}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo ContainerConfig.Hostname 
+docker image inspect --format='{{.ContainerConfig.Hostname}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo ContainerConfig.Domainname 
+docker image inspect --format='{{.ContainerConfig.Domainname}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo ContainerConfig.User 
+docker image inspect --format='{{.ContainerConfig.User}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo ContainerConfig.ExposedPorts{} 
+#docker image inspect --format='{{.ContainerConfig.ExposedPorts}}'  ${ID}
+docker image inspect --format='{{index .ContainerConfig.ExposedPorts}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo ContainerConfig.Tty
+docker image inspect --format='{{.ContainerConfig.Tty}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo ContainerConfig.Env[]
+docker image inspect --format='{{range .ContainerConfig.Env}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo ContainerConfig.Image 
+docker image inspect --format='{{.ContainerConfig.Image}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo ContainerConfig.Volumes{} 
+docker image inspect --format='{{range .ContainerConfig.Volumes}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo ContainerConfig.WorkingDir 
+docker image inspect --format='{{.ContainerConfig.WorkingDir}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo ContainerConfig.Labels{} 
+docker image inspect --format='{{range .ContainerConfig.Labels}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 维护人员：ContainerConfig.Labels.maintainer
+docker image inspect --format='{{.ContainerConfig.Labels.maintainer}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Docker版本：DockerVersion 
+docker image inspect --format='{{.DockerVersion}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 作者：Author 
+docker image inspect --format='{{.Author}}'  ${ID}
+echo ----------------------------------------------------------
+# Config 内容可采用
+echo 
+echo Config.Hostname 
+docker image inspect --format='{{.Config.Hostname}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Domainname 
+docker image inspect --format='{{.Config.Domainname}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.User 
+docker image inspect --format='{{.Config.User}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.ExposedPorts{} 
+docker image inspect --format='{{range .Config.ExposedPorts}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Tty
+docker image inspect --format='{{.Config.Tty}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Env[]
+docker image inspect --format='{{range .Config.Env}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Image 
+docker image inspect --format='{{.Config.Image}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Volumes{} 
+docker image inspect --format='{{range .Config.Volumes}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.WorkingDir 
+docker image inspect --format='{{.Config.WorkingDir}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Labels{} 
+docker image inspect --format='{{range .Config.Labels}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 维护人员：Config.Labels.maintainer
+docker image inspect --format='{{.Config.Labels.maintainer}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 架构：Architecture 
+docker image inspect --format='{{.Architecture}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 操作系统：Os 
+docker image inspect --format='{{.Os}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 大小：Size 
+docker image inspect --format='{{.Size}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo VirtualSize 
+docker image inspect --format='{{.VirtualSize}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo GraphDriver.Data.LowerDir
+docker image inspect --format='{{.GraphDriver.Data.LowerDir}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo GraphDriver.Data.MergedDir
+docker image inspect --format='{{.GraphDriver.Data.MergedDir}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo GraphDriver.Data.UpperDir
+docker image inspect --format='{{.GraphDriver.Data.UpperDir}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo GraphDriver.Data.WorkDir
+docker image inspect --format='{{.GraphDriver.Data.WorkDir}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo GraphDriver.Name
+docker image inspect --format='{{.GraphDriver.Name}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Metadata.LastTagTime
+docker image inspect --format='{{.Metadata.LastTagTime}}'  ${ID}
+echo ----------------------------------------------------------
+

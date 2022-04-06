@@ -1,0 +1,793 @@
+#!/bin/bash
+
+#docker search --limit 15 --filter "is-official=false"  hello
+#docker search --limit 10   hello
+
+# limit=5
+# Keyword=hello
+# docker search --limit ${limit}  --no-trunc --format "{{.Name}}#{{.StarCount}}#'{{.IsOfficial}}'#'{{.IsAutomated}}'#{{.Description}}"  "${Keyword}"
+# ID=654546
+# eval INFO_Searchs_${ID}_Name=1111
+# eval echo \${INFO_Searchs_${ID}_Name}
+# i=1
+# INFO_Searchs_ID[1]=110
+# SearchsID="${INFO_Searchs_ID[${i}]}"
+# echo SearchsID: ${SearchsID}
+
+# SearchsIndex=1
+# Str1="INFO_Searchs_Clear[${SearchsIndex}]"
+# Str2="INFO_Searchs_Clear[${SearchsIndex}]=\"true\""
+# StrA="INFO_Searchs_Clear[${SearchsIndex}]=\"false\""
+# StrB="INFO_Searchs_Clear[${SearchsIndex}]=\"true\""
+# echo StrA:${StrA}
+# echo StrB:${StrB}
+# #sed  's/${StrA}/${StrB}/g;'    "/tmp/ss/Searchs/DATA_Searchs.sh">"/tmp/ss/Searchs/DATA_Searchs2.sh"
+# sed  's#^${Str1}.*$#${Str2}#g'    /tmp/ss/Searchs/DATA_Searchs.sh>/tmp/ss/Searchs/DATA_Searchs2.sh
+
+
+
+DEBUG=0
+oldIFS=$IFS
+# 临时目录
+# TmpDir=/tmp/ss/
+# TmpDir_Lang="${TmpDir}Lang/"
+# TmpDir_Images="${TmpDir}Images/"
+# TmpDir_Images_Sub="${TmpDir_Images}Sub/"
+# TmpDir_Containers="${TmpDir}Containers/"
+# TmpDir_Containers_Sub="${TmpDir_Containers}Sub/"
+# TmpDir_Networks="${TmpDir}Networks/"
+# TmpDir_Networks_Sub="${TmpDir_Networks}Sub/"
+# TmpDir_Volumes="${TmpDir}Volumes/"
+# TmpDir_Volumes_Sub="${TmpDir_Volumes}Sub/"
+# TmpDir_Searchs="${TmpDir}Searchs/"
+# TmpDir_Searchs_Sub="${TmpDir_Searchs}Sub/"
+# [ ! -d "${TmpDir}" ] && mkdir -p "${TmpDir}"
+# [ ! -d "${TmpDir_Lang}" ] && mkdir -p "${TmpDir_Lang}"
+# [ ! -d "${TmpDir_Images}" ] && mkdir -p "${TmpDir_Images}"
+# [ ! -d "${TmpDir_Images_Sub}" ] && mkdir -p "${TmpDir_Images_Sub}"
+# [ ! -d "${TmpDir_Containers}" ] && mkdir -p "${TmpDir_Containers}"
+# [ ! -d "${TmpDir_Containers_Sub}" ] && mkdir -p "${TmpDir_Containers_Sub}"
+# [ ! -d "${TmpDir_Networks}" ] && mkdir -p "${TmpDir_Networks}"
+# [ ! -d "${TmpDir_Networks_Sub}" ] && mkdir -p "${TmpDir_Networks_Sub}"
+# [ ! -d "${TmpDir_Volumes}" ] && mkdir -p "${TmpDir_Volumes}"
+# [ ! -d "${TmpDir_Volumes_Sub}" ] && mkdir -p "${TmpDir_Volumes_Sub}"
+# [ ! -d "${TmpDir_Searchs}" ] && mkdir -p "${TmpDir_Searchs}"
+# [ ! -d "${TmpDir_Searchs_Sub}" ] && mkdir -p "${TmpDir_Searchs_Sub}"
+# LangDir=lang/
+# Lang=cn
+
+
+# 命令字体颜色
+SYS_CmdFontColor="${SYS_CmdFontColor:-35}"
+
+#${LANG_ExecutionSuccess:-执行成功}
+# echo -e "  黑色: \033[1;30m${LANG_ExecutionFailure:-执行失败}\033[0m"  #
+# echo -e "  红色: \033[1;31m${LANG_ExecutionFailure:-执行失败}\033[0m"  #
+# echo -e "  绿色: \033[1;32m${LANG_ExecutionSuccess:-执行成功}\033[0m"  #		
+# echo -e "  黄色: \033[1;33m${LANG_ExecutionSuccess:-执行成功}\033[0m"  #		
+# echo -e "  蓝色: \033[1;34m${LANG_ExecutionSuccess:-执行成功}\033[0m"  #		
+# echo -e "紫红色: \033[1;${SYS_CmdFontColor}m""${LANG_ExecutionSuccess:-执行成功}""\033[0m"  #采用		
+# echo -e "青蓝色: \033[1;36m${LANG_ExecutionSuccess:-执行成功}\033[0m"  #		
+# echo -e "  白色: \033[1;37m${LANG_ExecutionSuccess:-执行成功}\033[0m"  #		
+
+# 72f91ea5b39d    nginx1.15
+# 9a5ea512234a    php54_test
+
+#DevelopmentDocument
+# echo -e "\033[1;${SYS_CmdFontColor}m"docker
+#  "\033[0m"
+docker container commit  -a hentai@a-team.com -m 'Added a new file' "94b7f0e20b51"  "myrepo/testimage:v3"
+
+#docker pull hello-world
+#docker images
+
+# echo 'aaaa' >/tmp/aaa@bb.txt
+# cat /tmp/aaa@bb.txt
+#docker rmi  "myhello:v1" $fa
+#docker rmi "" "myhello:v1"
+#docker rmi  myhello:v1
+
+
+echo "$?"
+
+exit 0
+
+
+# /tmp/myout/hello-world@latest.tar
+if [ "${SYS_Lang}" == "cn" ];then
+
+
+
+
+
+# 注
+# bash中，转义,如果一个\不行，可尝试2个\\ 
+# 如 "`eval echo \\${INFO_Volumes_${ID}_ID}`"  
+
+# echo -n 'hello' | md5sum | cut -d ' ' -f 1
+# echo -n 'hello' | sha1sum | cut -d ' ' -f 1
+
+
+# ================================================== 
+# 函数名称：MAP_SET	 					  	 
+# 函数功能：映射表:设置			 
+# 函数参数：			 		 	  				 
+#     	 [$1]:     		      	 
+#
+# 变量列表:
+#               ${MAP_Index} : MAP全局索引
+#               ${MAP_ID[0]} : ID(sha1sum:相对路径/文件名称)
+#         ${MAP_FileName[0]} : 文件名称
+#     ${MAP_AbsolutePath[0]} : 绝对路径(/mnt/.../funlist/a)
+#     ${MAP_RelativePath[0]} : 相对路径(funlist/a)
+#          ${MAP_FunList[0]} : 函数列表(,号分隔)
+#      ${MAP_FunList_Raw[0]} : 函数列表(原生,包含换行符)
+#     ${MAP_FunList_Array_0} : 函数列表(数组)
+#                              #eval echo "\${MAP_FunList_Array_${MAP_Index}[0]}"  
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 注意： 									 	  
+# 		只支持 source 调用			 									 	  
+# ================================================== 
+function MAP_SET(){
+	# ${BASH_SOURCE[0]}: ./funlist/a/bc.sh
+	#                      funlist/a/bc.sh
+	# dirname ${BASH_SOURCE[0]}: ./funlist/a
+	#                              funlist/a
+	# 删除行首空格: sed 's/^[ \t]*//g'
+	# 删除行尾空格: sed 's/[ \t]*$//g'	
+	
+	#文件名称(bc.sh)	
+	a_FileName="${BASH_SOURCE[0]##*/}"
+	a_FileName="`echo ${a_FileName} | sed 's/^[ \t]*//g' | sed 's/[ \t]*$//g'`"	
+	#相对路径(funlist/a) #去除首尾空格，去除./
+	a_RelativePath="`dirname ${BASH_SOURCE[0]}`"	
+	a_RelativePath="`echo ${a_RelativePath}  | sed 's/^[ \t]*//g' | sed 's/[ \t]*$//g' | sed 's/^\.\///g'`"
+	# ID(sha1sum:相对路径/文件名称)
+	a_ID="`echo -n "${a_RelativePath}/${a_FileName}" | sha1sum | cut -d ' ' -f 1`"
+	a_ID="`echo ${a_ID} | sed 's/^[ \t]*//g' | sed 's/[ \t]*$//g'`"
+	
+	# 存在记录时，使用已存记录的索引
+	ai=0
+	for a in ${MAP_ID[@]}
+	do
+		if [ "${a_ID}" == "${a}" ];then
+			#echo "ID hit"
+			MAP_OldIndex="${MAP_Index}"
+			MAP_Index="${ai}"
+		fi
+		let ai++
+	done
+	
+	# MAP全局索引
+	MAP_Index="${MAP_Index:-0}"
+	MAP_PrevIndex="${MAP_Index}"	
+	# 文件名称(bc.sh)
+	MAP_FileName[${MAP_Index}]="${a_FileName}"
+	# 绝对路径(/mnt/.../funlist/a)
+	MAP_AbsolutePath[${MAP_Index}]="$(cd $(dirname ${BASH_SOURCE[0]}); pwd)"
+	MAP_AbsolutePath[${MAP_Index}]="`echo ${MAP_AbsolutePath[${MAP_Index}]} | sed 's/^[ \t]*//g' | sed 's/[ \t]*$//g'`"
+	# 相对路径(funlist/a) #去除首尾空格，去除./
+	MAP_RelativePath[${MAP_Index}]="${a_RelativePath}"
+	# 函数列表(原生,包含换行符)
+	MAP_FunList_Raw[${MAP_Index}]="`cat ${MAP_AbsolutePath[${MAP_Index}]}/${MAP_FileName[${MAP_Index}]} | grep "^function.*" | sed 's/function//g' | sed 's/()//g' | sed 's/{//g' | sed 's/^[ \t]*//g' | sed 's/[ \t]*$//g'`"
+	# 函数列表(数组)
+	eval MAP_FunList_Array_${MAP_Index}=\(`echo "${MAP_FunList_Raw[${MAP_Index}]}"`\)
+	# 函数列表(,号分隔)	
+	for i in `eval echo '${MAP_FunList_Array_'"${MAP_Index}"'[@]}'`
+	do
+		[ "${FunList}" != "" ] &&  FunList="${FunList},${i}" || FunList="${i}"
+	done
+	MAP_FunList[${MAP_Index}]="${FunList}"
+	# ID(sha1sum:相对路径/文件名称)
+	MAP_ID[${MAP_Index}]="${a_ID}"
+	
+	let MAP_Index++	
+	
+	# 恢复索引
+	[ "${MAP_OldIndex}" != "" ] &&  MAP_Index="${MAP_OldIndex}"
+	# 清除变量
+	unset FunList
+	unset a_FileName
+	unset a_RelativePath
+	unset a_ID
+	unset MAP_OldIndex
+}
+##### 函数测试 #####
+MAP_SET
+#eval echo "\${MAP_FunList_Array_${MAP_Index}[1]}"  
+#echo "FunListRaw: ${MAP_FunList_Raw[${MAP_PrevIndex}]}"  #| grep -w "aa"
+#echo "FunList: ${MAP_FunList[${MAP_PrevIndex}]}" 
+#echo "ID: ${MAP_ID[${MAP_PrevIndex}]}"
+#echo "FileName: ${MAP_FileName[${MAP_PrevIndex}]}"
+# echo "AbsolutePath: ${MAP_AbsolutePath[${MAP_PrevIndex}]}"
+
+
+#echo -------------------------
+# ./funlist/a/bc.sh
+# ./funlist/a/bc.sh
+#echo -------------------------
+# source funlist/a/bc.sh
+# source funlist/a/bc.sh
+# source funlist/a/kc.sh
+# source funlist/a/kc.sh
+# source funlist/a/bc.sh
+# source funlist/a/bc.sh
+echo 
+
+
+# ================================================== 
+# 函数名称：MAP_GET					  	 
+# 函数功能：映射表:获取	 
+# 函数参数：			 		 	  				 
+#     	 $1: 查询字段
+#     	 $2: 条件字段
+#     	 $3: 条件内容
+#      [$4]: 条件字段(and)     		      	 
+#      [$5]: 条件内容
+#
+# 条件字段:
+#         MAP_FileName : 文件名称
+#     MAP_AbsolutePath : 绝对路径(/mnt/.../funlist/a)
+#     MAP_RelativePath : 相对路径(funlist/a)
+#          MAP_FunList : 函数名称
+#  
+# 查询字段:
+#               MAP_ID : ID
+#         MAP_FileName : 文件名称
+#     MAP_AbsolutePath : 绝对路径(/mnt/.../funlist/a)
+#     MAP_RelativePath : 相对路径(funlist/a)
+#          MAP_FunList : 函数列表(,号分隔)
+#      MAP_FunList_Raw : 函数列表(原生,包含换行符)
+#
+# 返回值： 									 	  
+# 		$?: 获取调用结果(调用后立即使用)							  
+# 		    0: 执行成功							 	
+# 		    1: 执行失败								 	
+# 			 		  		 	  
+# 	                  echo Result : 结果(取值为最后一个匹配的结果) 
+# 	       ${MAP_Result_Index[0]} : 结果 索引
+# 	          ${MAP_Result_ID[0]} : 结果 ID
+# 	    ${MAP_Result_FileName[0]} : 结果 文件名称
+# 	${MAP_Result_AbsolutePath[0]} : 结果 绝对路径
+# 	${MAP_Result_RelativePath[0]} : 结果 相对路径
+# 	     ${MAP_Result_FunList[0]} : 结果 函数列表(,号分隔)
+# 	  ${MAP_Result_FunListRaw[0]} : 结果 函数列表(原生,包含换行符)			 									 	  
+# ================================================== 
+function MAP_GET(){
+	#查询字段
+	QueryField="${1}"
+	#条件字段01
+	ConditionField_01="${2}"	
+	#条件内容01
+	ConditionValue_01="${3}"
+	#条件字段02
+	ConditionField_02="${4:-}"	
+	#条件内容02
+	ConditionValue_02="${5:-}"
+	
+	MAP_GET_index1=0
+	MAP_GET_index2=0
+	if [ "${ConditionField_02}" != "" ];then
+		# 多条件查询
+		for i in ${MAP_FileName[@]}
+		do
+			#echo "${MAP_FunList_Raw[${MAP_PrevIndex}]}"  | grep -w "aa"
+			c1="`eval echo "\\${${ConditionField_01}[${MAP_GET_index1}]}"`"			
+			c1="`echo "${c1}" | grep -w "${ConditionValue_01}"`"
+			c2="`eval echo "\\${${ConditionField_02}[${MAP_GET_index1}]}"`"			
+			c2="`echo "${c2}" | grep -w "${ConditionValue_02}"`"			
+			if [ "${c1}" != "" ] && [ "${c2}" != "" ];then
+				eval MAP_Result="\${${QueryField}[${MAP_GET_index1}]}"
+				MAP_Result_Index[${MAP_GET_index2}]="${MAP_GET_index1}"
+				MAP_Result_ID[${MAP_GET_index2}]="${MAP_ID[${MAP_GET_index1}]}"
+				MAP_Result_FileName[${MAP_GET_index2}]="${MAP_FileName[${MAP_GET_index1}]}"
+				MAP_Result_AbsolutePath[${MAP_GET_index2}]="${MAP_AbsolutePath[${MAP_GET_index1}]}"
+				MAP_Result_RelativePath[${MAP_GET_index2}]="${MAP_RelativePath[${MAP_GET_index1}]}"
+				MAP_Result_FunList[${MAP_GET_index2}]="${MAP_FunList[${MAP_GET_index1}]}"
+				MAP_Result_FunListRaw[${MAP_GET_index2}]="${MAP_FunListRaw[${MAP_GET_index1}]}"
+				let MAP_GET_index2++				
+			fi
+			let MAP_GET_index1++
+		done 
+	else
+		# 单条件查询
+		for i in ${MAP_FileName[@]}
+		do			
+			c1="`eval echo "\\${${ConditionField_01}[${MAP_GET_index1}]}"`"			
+			c1="`echo "${c1}" | grep -w "${ConditionValue_01}"`"		
+			if [ "${c1}" != "" ];then
+				eval MAP_Result="\${${QueryField}[${MAP_GET_index1}]}"
+				MAP_Result_Index[${MAP_GET_index2}]="${MAP_GET_index1}"
+				MAP_Result_ID[${MAP_GET_index2}]="${MAP_ID[${MAP_GET_index1}]}"
+				MAP_Result_FileName[${MAP_GET_index2}]="${MAP_FileName[${MAP_GET_index1}]}"
+				MAP_Result_AbsolutePath[${MAP_GET_index2}]="${MAP_AbsolutePath[${MAP_GET_index1}]}"
+				MAP_Result_RelativePath[${MAP_GET_index2}]="${MAP_RelativePath[${MAP_GET_index1}]}"
+				MAP_Result_FunList[${MAP_GET_index2}]="${MAP_FunList[${MAP_GET_index1}]}"
+				MAP_Result_FunListRaw[${MAP_GET_index2}]="${MAP_FunListRaw[${MAP_GET_index1}]}"
+				let MAP_GET_index2++
+			fi
+			let MAP_GET_index1++
+		done
+	fi
+	# 返回结果
+	echo ${MAP_Result}	
+
+	# 清除变量
+	unset QueryField
+	unset ConditionField_01
+	unset ConditionValue_01
+	unset ConditionField_02
+	unset ConditionValue_02
+	unset MAP_GET_index1
+	unset MAP_GET_index2
+	unset c1
+	unset c2
+	unset MAP_Result
+}
+##### 函数测试 #####
+#MAP_GET "MAP_FileName" "MAP_FunList" "outhelp"
+#MAP_GET "MAP_FileName" "MAP_FunList" "MAP_SET"
+#MAP_GET "MAP_RelativePath" "MAP_FunList" "MAP_SET"
+#MAP_GET "MAP_RelativePath" "MAP_FunList" "MAP_SET" "MAP_FileName" "bc.sh"
+#echo MAP_FileName: ${MAP_Result}
+#echo MAP_RelativePath: ${MAP_Result}
+##### 使用示例 ##### 
+# # 脚本所在目录
+# Path="`MAP_GET "MAP_AbsolutePath" "MAP_FunList" "MAP_SET"`"
+# echo MAP_AbsolutePath: ${Path}
+
+#ccf
+
+# for a in ${MAP_ID[@]}
+# do
+	# echo $a
+# done
+echo MAP_ID[0]:${MAP_ID[0]}
+echo MAP_ID[1]:${MAP_ID[1]}
+echo MAP_ID[2]:${MAP_ID[2]}
+echo MAP_ID[3]:${MAP_ID[3]}
+echo MAP_FileName[0]:${MAP_FileName[0]}
+echo MAP_FileName[1]:${MAP_FileName[1]}
+echo MAP_FileName[2]:${MAP_FileName[2]}
+
+exit 0
+
+
+function bb() {
+	DOCKERINFO_FUN_Docker
+}
+function aa() {
+	#bb
+	echo FUNCNAME[0]: ${FUNCNAME[0]}
+	echo FUNCNAME[1]: ${FUNCNAME[1]}
+	echo FUNCNAME[2]: ${FUNCNAME[2]}
+	echo FUNCNAME[3]: ${FUNCNAME[3]}
+	echo FUNCNAME[4]: ${FUNCNAME[4]}
+}
+#echo FUNCNAME[0]: ${FUNCNAME[0]}
+#aa
+
+# 关联数组测试
+# declare -A MAP
+# MAP=([a]=aa [b]=bb)
+# MAP[c]=cc
+# echo ${MAP[a]}
+# echo ${MAP[b]}
+# echo ${MAP[c]}
+
+
+
+#------------------------------------------------------------------------------------------
+# [可选字段]
+# CPU:型号名称,架构, CPU核数,总线程数,一级数据缓存,一级指令缓存,二级缓存,三级缓存,是否支持64bit
+# 内存:内存总数,已用内存,空闲内存,可用内存,使用率
+# 硬盘:设备名称,设备类型,设备大小,设备挂载点,文件系统类型,文件系统标签,旋转设备,设备传输类型,设备供应商
+# 存储:设备名称,文件系统类型,大小,已使用,可用,使用率,挂载点
+# 系统:操作系统名称, 操作系统类型,内核版本,主机名,用户数量,用户列表
+# 系统负载:系统启动时间,系统运行时间 ,在线用户数量,最后1分钟,最后5分钟,最后15分钟,正在运行的进程数,进程总数
+# 网络:接口名称,硬件地址,IPv4,IPv6,子网掩码,网卡已开启,网线已连接,路由链 
+# Docker: Docker版本,存储驱动,日志驱动,Cgroup驱动,镜像数量,容器数量,运行中的容器数量,暂停中的容器数量,停止的容器数量,CPU资源,内存资源,Docker根目录,产品协议,注册表镜像
+#------------------------------------------------------------------------------------------
+# [实际使用的字段]
+# 系统:操作系统名称, 操作系统类型,内核版本,主机名,用户数量,用户列表
+# CPU:型号名称,CPU插槽数 ,总核数,总线程数,架构,是否支持64bit
+# 内存:内存总数,已用内存,空闲内存,可用内存,使用率
+# 系统负载:系统启动时间,系统运行时间 ,在线用户数量,最后1分钟,最后5分钟,最后15分钟,正在运行的进程数,进程总数
+#
+# 网络:接口名称,硬件地址,IPv4,IPv6,子网掩码,网卡已开启,网线已连接,路由链
+# 硬盘:设备名称,设备类型,设备大小,文件系统标签,旋转设备(介质类型),设备传输类型,设备挂载点
+# 存储:设备名称,文件系统类型,大小,已使用,可用,使用率,挂载点
+# Docker: Docker版本,存储驱动,日志驱动,Cgroup驱动,镜像数量,容器数量,运行中的容器数量,暂停中的容器数量,停止的容器数量,CPU资源,内存资源,Docker根目录,产品协议,注册表镜像
+#------------------------------------------------------------------------------------------
+
+
+# source funlist/lib/ByteConvert/ByteConvert.funlist
+# source funlist/lib/RepeatStr/RepeatStr.funlist
+# source funlist/lib/SysInfo/sysinfo.sh
+
+# source funlist/lib/DockerInfo/Docker.info.funlist
+# DOCKERINFO_FUN_Docker
+
+
+# Init_Conf : ok #
+# 终端列数(宽)(单位:字符)
+SYS_TerminalColumns=`tput cols`
+# 终端行数(高)(单位:字符)
+SYS_TerminalLines=`tput lines`
+# 小屏尺寸(单位:字符)
+SYS_SmallSize="${SYS_SmallSize:-105}"
+# 是否小屏(0:否|1:是)(-gt >)
+[ "${SYS_TerminalColumns}" -gt "${SYS_SmallSize}" ] && SYS_isSmallScreen="0" || SYS_isSmallScreen="1"
+
+
+exit 0
+
+
+
+
+
+
+
+# string="abcd"
+# echo ${#string} #输出 4
+#string="中文" 
+# echo ${#string} #输出 6
+# a=8.5
+# b=4
+
+#StrLineLength=`expr $a / $b`
+#StrLineLength=`let $a - $b`
+
+# Str="中文d"
+# StrLength="${#Str}"
+# TerminalColumns=`tput cols`
+# StrLineLength="$((${TerminalColumns}-${StrLength}-2))"
+# StrLineLength2="$((${StrLineLength}/2))"
+# echo StrLength: $StrLength
+# echo TerminalColumns: $TerminalColumns
+# echo StrLineLength: $StrLineLength
+# echo StrLineLength2: $StrLineLength2
+
+
+
+#echo "1 13" | awk '{printf("%0.3f\n",$1/$2)}'
+echo `awk -v x=1 -v y=13 'BEGIN{printf "%.3f\n",x/y}'`
+
+exit 0
+
+# https://www.jb51.net/article/59046.htm
+#linux发行版名称
+if [[ -f /usr/bin/lsb_release ]]; then 
+OS=$(/usr/bin/lsb_release -a |grep Description |awk -F : '{print $2}' |sed 's/^[ \t]*//g')
+else 
+OS=$(cat /etc/issue |sed -n '1p') 
+fi
+echo -e "OS:${OS}"
+######################################################################################################
+#查看系统是否为64位：uname -m，若出现x86_64，则为64位
+OS_version=$(uname -m)
+echo -e "系统位数:${OS_version}"
+
+#系统内核版本 
+kernel_version=$(uname -r) 
+echo -e "系统内核版本:${kernel_version}"
+#cpu型号
+CPU=$(grep 'model name' /proc/cpuinfo |uniq |awk -F : '{print $2}' |sed 's/^[ \t]*//g' |sed 's/ \+/ /g') 
+echo -e "cpu型号:${CPU}"
+#物理cpu个数
+Counts=$(grep 'physical id' /proc/cpuinfo |sort |uniq |wc -l)
+echo -e "物理cpu个数:${Counts}"
+#物理cpu内核数
+Cores=$(grep 'cpu cores' /proc/cpuinfo |uniq |awk -F : '{print $2}' |sed 's/^[ \t]*//g')
+echo -e "物理cpu内核数:${Cores}"
+#逻辑cpu个数 
+PROCESSOR=$(grep 'processor' /proc/cpuinfo |sort |uniq |wc -l)
+echo -e "逻辑cpu个数:${PROCESSOR}"
+
+#查看CPU当前运行模式是64位还是32位
+#Mode=$(getconf LONG_BIT) 
+#echo -e "CPU位数:${Mode}"
+
+#查看CPU是否支持64位技术：grep 'flags' /proc/cpuinfo，若flags信息中包含lm字段，则支持64位
+Numbers=$(grep 'lm' /proc/cpuinfo |wc -l) 
+if (( ${Numbers} > 0)); then lm=64 
+else lm=32 
+fi
+echo -e "CPU支持64位:${lm}"
+######################################################################
+#Memtotal 内存总大小
+Total=$(cat /proc/meminfo |grep 'MemTotal' |awk -F : '{print $2}' |sed 's/^[ \t]*//g')
+echo -e "内存总大小:${Total}"
+#系统支持最大内存 
+#Max_Capacity=$(dmidecode -t memory -q |grep 'Maximum Capacity' |awk -F : '{print $2}' |sed 's/^[ \t]*//g')
+#echo -e "系统支持最大内存:${Max_Capacity}"
+#查看内存类型、频率、条数、最大支持内存等信息：dmidecode -t memory，或dmidecode | grep -A16 "Memory Device$"
+#下面为统计内存条数
+#Number=$(dmidecode | grep -A16 "Memory Device$" |grep Size|sort |sed 's/^[ \t]*//g'| grep -v 'No Module Installed' | wc -l)
+#echo -e "Number of Physical Memory:${Number}"
+
+#SwapTotal swap分区总大小
+SwapTotal=$(cat /proc/meminfo |grep 'SwapTotal' |awk -F : '{print $2}' |sed 's/^[ \t]*//g')
+echo -e "swap分区总大小:${SwapTotal}"
+#Buffers size 
+Buffers=$(cat /proc/meminfo |grep 'Buffers' |awk -F : '{print $2}' |sed 's/^[ \t]*//g')
+echo -e "Buffers:${Buffers}"
+#Cached size
+Cached=$(cat /proc/meminfo |grep '\<Cached\>' |awk -F : '{print $2}' |sed 's/^[ \t]*//g')
+echo -e "Cached:${Cached}"
+#空闲内存 + buffers/cache
+Available=$(free -m |grep - |awk -F : '{print $2}' |awk '{print $2}')
+echo -e "Available Memory:${Available} MB"
+#显示硬盘，以及大小 
+Disk=$(fdisk -l |grep 'Disk' |awk -F , '{print $1}' | sed 's/Disk identifier.*//g' | sed '/^$/d')
+echo -e "Amount Of Disks:${Disk}"
+#各挂载分区使用情况
+#Partion=$(df -hlP |sed -n '2,$p')
+#echo -e "Usage Of partions:${Partion}"
+
+
+exit 0
+
+
+
+
+
+
+
+
+
+# 容器 测试
+# 获取所有容器信息
+# docker ps -a
+# 获取运行中的容器信息
+# docker ps
+#
+# 容器详情
+# docker container inspect <id>
+
+# range : 遍历
+# json : 编码为json字符串。当前会自动双引号包裹每项，且处理空格。
+#        如，"PHPIZE_DEPS=autoconf \t\tdpkg-dev \t\tfile \t\tg++ \t\tre2c"
+# println : 在新行上打印每个值。也可以直接使用 {{println}} 来换行
+# end ：遍历的结束。
+## 更多参阅：[Docker格式化输出命令:docker inspect --format学习笔记](https://www.cnblogs.com/kevingrace/p/6424476.html)
+#docker container inspect --format='{{range .ContainerConfig.Env}}{{json .}}{{println}}{{end}}'   ${ID}
+
+oldIFS=$IFS
+#IFS="@"
+ID=c151594a491f
+ID=9a5ea512234a
+ID=33c10683dcb8
+
+echo 
+echo 端口映射
+docker container port   ${ID}
+echo ----------------------------------------------------------
+
+
+# 容器列表
+# echo '所有容器：'
+# docker ps -a --format "{{.ID}}#{{.Image}}#'{{.CreatedAt}}'#'{{.RunningFor}}'#'{{.Ports}}'#{{.Status}}#{{.Names}}#{{.Networks}}"
+# echo '运行中的容器：'
+# docker ps --format "{{.ID}}#{{.Image}}#'{{.CreatedAt}}'#'{{.RunningFor}}'#{{.Ports}}#{{.Status}}#{{.Names}}#{{.Networks}}"
+# echo
+# docker ps --format "{{.ID}}"
+# docker ps --format "{{.Image}}"
+# docker ps --format "{{.Command}}"
+# docker ps --format "{{.CreatedAt}}"
+# docker ps --format "{{.RunningFor}}"
+# docker ps --format "{{.Ports}}"
+# docker ps --format "{{.Status}}"
+# docker ps --format "{{.Size}}"
+# docker ps --format "{{.Names}}"
+# docker ps --no-trunc --format "'{{.Labels}}'"
+# docker ps --no-trunc --format "{{.Mounts}}"
+# docker ps --format "{{.Networks}}"
+
+
+
+# 容器详情(部分)
+echo [${ID}]:
+echo 
+echo Id 
+docker container inspect --format='{{.Id}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 创建时间：Created 
+docker container inspect --format='{{.Created}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 镜像ID：Image
+docker container inspect --format='{{.Image}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 日志路径：LogPath
+docker container inspect --format='{{.LogPath}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 名称：Name
+docker container inspect --format='{{.Name}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 平台：Platform
+docker container inspect --format='{{.Platform}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.Status
+docker container inspect --format='{{.State.Status}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.Running
+docker container inspect --format='{{.State.Running}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.Paused
+docker container inspect --format='{{.State.Paused}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.Restarting
+docker container inspect --format='{{.State.Restarting}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.Pid
+docker container inspect --format='{{.State.Pid}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.Error
+docker container inspect --format='{{.State.Error}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.StartedAt
+docker container inspect --format='{{.State.StartedAt}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 状态：State.FinishedAt
+docker container inspect --format='{{.State.FinishedAt}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.RestartPolicy.Name
+docker container inspect --format='{{.HostConfig.RestartPolicy.Name}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.RestartPolicy.MaximumRetryCount
+docker container inspect --format='{{.HostConfig.RestartPolicy.MaximumRetryCount}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.AutoRemove
+docker container inspect --format='{{.HostConfig.AutoRemove}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.Dns[] 
+docker container inspect --format='{{range .HostConfig.Dns}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.DnsOptions[] 
+docker container inspect --format='{{range .HostConfig.DnsOptions}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.DnsSearch[] 
+docker container inspect --format='{{range .HostConfig.DnsSearch}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 主机配置：HostConfig.Privileged
+docker container inspect --format='{{.HostConfig.Privileged}}'  ${ID}
+echo ----------------------------------------------------------
+
+echo 
+echo 挂载配置：Mounts[] 
+docker container inspect --format='{{range .Mounts}}{{json .}}{{println}}{{end}}'   ${ID}
+echo 挂载配置：Mounts[].Source 
+docker container inspect --format='{{range .Mounts}}{{json .Source}}{{println}}{{end}}'   ${ID}
+echo 挂载配置：Mounts[].Destination 
+docker container inspect --format='{{range .Mounts}}{{json .Destination}}{{println}}{{end}}'   ${ID}
+echo 挂载配置：Mounts[].Mode 
+docker container inspect --format='{{range .Mounts}}{{json .Mode}}{{println}}{{end}}'   ${ID}
+echo 挂载配置：Mounts[].RW 
+docker container inspect --format='{{range .Mounts}}{{json .RW}}{{println}}{{end}}'   ${ID}
+echo 
+echo 挂载配置：Mounts[].Source:Destination:Mode   #"/mnt/f_DockerData/Tmp/a/aa:/mnt/tmp2:rw"
+docker container inspect --format='{{range .Mounts}}"{{.Source}}:{{.Destination}}:{{.Mode}}"{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+
+
+# Config 内容可采用
+echo 
+echo Config.Hostname 
+docker container inspect --format='{{.Config.Hostname}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Domainname 
+docker container inspect --format='{{.Config.Domainname}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.User 
+docker container inspect --format='{{.Config.User}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.ExposedPorts{} 
+# "9000/tcp":{}
+docker container inspect --format='{{range $p,$conf := .Config.ExposedPorts}}{{json $p}}:{{$conf}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Tty
+docker container inspect --format='{{.Config.Tty}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Env[]
+docker container inspect --format='{{range .Config.Env}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Image 
+docker container inspect --format='{{.Config.Image}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Volumes{} 
+docker container inspect --format='{{range .Config.Volumes}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.WorkingDir 
+docker container inspect --format='{{.Config.WorkingDir}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo Config.Labels{} 
+docker container inspect --format='{{range .Config.Labels}}{{json .}}{{println}}{{end}}'   ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 维护人员：
+echo Config.Labels.maintainer
+docker container inspect --format='{{.Config.Labels.maintainer}}'  ${ID}
+echo ----------------------------------------------------------
+
+echo 
+echo 网络：NetworkSettings.Gateway
+docker container inspect --format='{{.NetworkSettings.Gateway}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 网络：NetworkSettings.IPAddress
+docker container inspect --format='{{.NetworkSettings.IPAddress}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 网络：NetworkSettings.IPPrefixLen
+docker container inspect --format='{{.NetworkSettings.IPPrefixLen}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 网络：NetworkSettings.MacAddress
+docker container inspect --format='{{.NetworkSettings.MacAddress}}'  ${ID}
+echo ----------------------------------------------------------
+echo 
+echo 网络：NetworkSettings.Ports{}
+# 数据结构：
+# "Ports": {
+			# "86/tcp": [
+				# {
+					# "HostIp": "0.0.0.0",
+					# "HostPort": "8086"
+				# }
+			# ],
+			# "88/tcp": [
+				# {
+					# "HostIp": "0.0.0.0",
+					# "HostPort": "8088"
+				# }
+			# ],
+			# "9000/tcp": null
+		# },
+##############################
+# 遍历(range)，$p等于"86/tcp"；$conf等于:号后面的数组[...]，每个元素为{}
+# 所以$conf也可以像前面一样遍历，然后即可获取其中的属性的值
+#
+# 官方文，如下使用index将报错。
+#docker inspect --format='{{range $p,$conf := .NetworkSettings.Ports}} {{$p}} -> {{(index $conf 0).HostPort}} {{end}}'  ${ID}
+#
+# 正确做法是再次遍历(range)，如下：
+# 没绑定的暴露端口也显示
+# 86/tcp->0.0.0.0:8086   9000/tcp->
+docker inspect --format='{{range $p,$conf := .NetworkSettings.Ports}}{{$p}} -> {{range $conf}}{{.HostIp}}:{{.HostPort}} {{end}}{{end}}'  ${ID}
+# 只显示绑定的端口
+# 86/tcp->0.0.0.0:8086 
+docker inspect --format='{{range $p,$conf := .NetworkSettings.Ports}}{{range $conf}}{{$p}} -> {{.HostIp}}:{{.HostPort}} {{end}}{{end}}'  ${ID}
+echo ----------------------------------------------------------
+

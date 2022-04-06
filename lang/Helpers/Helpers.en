@@ -1,0 +1,16 @@
+#!/bin/bash
+
+LANG_Helpers_ImportImage_01="Import image success"
+LANG_Helpers_ImportImage_02="Import image failure"
+LANG_Helpers_ExportImage_01="Create directory success"
+LANG_Helpers_ExportImage_02="Create directory failure"
+LANG_Helpers_ExportImage_03="Export image success"
+LANG_Helpers_ExportImage_04="Export image failure"
+LANG_Helpers_ContainerDiff_01="Current container"
+LANG_Helpers_ContainerDiff_02="Added file or directory"
+LANG_Helpers_ContainerDiff_03="File or directory deleted"
+LANG_Helpers_ContainerDiff_04="File or directory changed"
+LANG_Helpers_ContainerDiff_05="Difference list"
+LANG_Helpers_CacheHandle_01="Force data collection..."
+LANG_Helpers_CacheHandle_02="Data collection..."
+LANG_Helpers_CacheHandle_03="Load cache file..."

@@ -1,0 +1,11 @@
+#!/bin/bash
+
+LANG_Menu_Searchs_01="Search image"
+LANG_Menu_Searchs_02="Search cleanup"
+LANG_Menu_Searchs01_01="Search image"
+LANG_Menu_Searchs01_02="Search details"
+LANG_Menu_Searchs01Details_01="Unknown input, please input again"
+LANG_Menu_Searchs01Details_02="Search list"
+LANG_Menu_Searchs01Details_03="Search details"
+LANG_Menu_Searchs01Details_04="Pull image"
+LANG_Menu_Searchs02_01="Search cleanup"

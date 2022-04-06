@@ -1,0 +1,19 @@
+#!/bin/bash
+
+LANG_Menu_Others_01="Refresh cache"
+LANG_Menu_Others_02="Read log"
+LANG_Menu_Others_03="Cleanup log"
+LANG_Menu_Others_04="Docker information"
+LANG_Menu_Others_05="Setting"
+LANG_Menu_Others_06="About"
+LANG_Menu_Others01_01="Refresh cache"
+LANG_Menu_Others01_02="Note: this will delete and reconstruct all caches"
+LANG_Menu_Others01_03="Whether to continue"
+LANG_Menu_Others02_01="Read log"
+LANG_Menu_Others03_01="Cleanup log"
+LANG_Menu_Others03_02="Note: this will delete all log files"
+LANG_Menu_Others03_03="Whether to continue"
+LANG_Menu_Others04_01="Docker information"
+LANG_Menu_Others05_01="Setting"
+LANG_Menu_Others06_01="About"
+

@@ -1,0 +1,19 @@
+#!/bin/bash
+
+LANG_Menu_Others_01="刷新缓存"
+LANG_Menu_Others_02="读取日志"
+LANG_Menu_Others_03="清理日志"
+LANG_Menu_Others_04="Docker信息"
+LANG_Menu_Others_05="设置"
+LANG_Menu_Others_06="关于"
+LANG_Menu_Others01_01="刷新缓存"
+LANG_Menu_Others01_02="注意: 这将删除并重构所有缓存"
+LANG_Menu_Others01_03="是否继续"
+LANG_Menu_Others02_01="读取日志"
+LANG_Menu_Others03_01="清理日志"
+LANG_Menu_Others03_02="注意: 这将删除所有日志文件"
+LANG_Menu_Others03_03="是否继续"
+LANG_Menu_Others04_01="Docker信息"
+LANG_Menu_Others05_01="设置"
+LANG_Menu_Others06_01="关于"
+
